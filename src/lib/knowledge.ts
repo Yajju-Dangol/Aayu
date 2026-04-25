@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
-import { supabase } from './supabase';
+import { supabase, createAgentSupabase } from './supabase';
 
 const ai = new GoogleGenAI({
   apiKey: import.meta.env.VITE_GEMINI_API_KEY || '',
@@ -69,7 +69,7 @@ export async function processAndUploadPDF(file: File, userId: string): Promise<v
   }
 }
 
-export async function searchKnowledge(query: string, userId: string): Promise<string> {
+export async function searchKnowledge(query: string, userId: string, accessToken?: string): Promise<string> {
   try {
     const response = await ai.models.embedContent({
       model: 'gemini-embedding-2',
@@ -84,7 +84,8 @@ export async function searchKnowledge(query: string, userId: string): Promise<st
     const embedding = response.embeddings?.[0]?.values;
     if (!embedding) return "No data found.";
 
-    const { data, error } = await supabase.rpc('match_health_knowledge', {
+    const agentSupabase = createAgentSupabase(accessToken || '');
+    const { data, error } = await agentSupabase.rpc('match_health_knowledge', {
       query_embedding: embedding,
       match_threshold: 0.5,
       match_count: 3,

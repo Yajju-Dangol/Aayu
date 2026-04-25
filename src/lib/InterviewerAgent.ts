@@ -7,7 +7,7 @@ including whether she has taken her medicine and how she is feeling.
 Keep your responses short, natural, conversational, and caring.
 `;
 
-import { supabase } from './supabase';
+import { supabase, createAgentSupabase } from './supabase';
 import { FUNCTION_DECLARATIONS, executeTool, type ToolCall } from './tools';
 
 export class InterviewerAgent {
@@ -19,10 +19,11 @@ export class InterviewerAgent {
   private nextPlayTime = 0;
   private transcriptAccumulator = '';
   private userId: string;
-  private accessToken = '';
+  private accessToken: string;
 
-  constructor(userId: string) {
+  constructor(userId: string, accessToken?: string) {
     this.userId = userId;
+    this.accessToken = accessToken || '';
   }
 
   public onMessage(callback: (text: string, isFinal: boolean) => void) {
@@ -59,37 +60,11 @@ export class InterviewerAgent {
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
         if (!apiKey) throw new Error("API Key is missing.");
 
-        // Fetch and refresh user session explicitly for tool calls
-        try {
-          // getSession() will automatically refresh if the token is expired
-          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-          
-          if (sessionError) throw sessionError;
-
-          if (session?.access_token) {
-            this.accessToken = session.access_token;
-            console.log('[Agent] Session refreshed and token obtained.');
-          } else {
-            // If no session, try to get user which is more authoritative
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error("No authenticated user found.");
-            
-            // Re-fetch session after getUser in case it refreshed
-            const { data: { session: newSession } } = await supabase.auth.getSession();
-            this.accessToken = newSession?.access_token || '';
-          }
-        } catch (e) {
-          console.warn('[Agent] Session check failed:', e);
-          if (this.onMessageCallback) {
-            this.onMessageCallback("Session expired. Please log out and back in.", true);
-          }
-          return reject(e);
-        }
-
         // Fetch user health knowledge — with a 3s timeout so it never blocks the connection
         let additionalContext = "";
         try {
-          const fetchPromise = supabase
+          const agentSupabase = createAgentSupabase(this.accessToken);
+          const fetchPromise = agentSupabase
             .from('health_knowledge')
             .select('content')
             .eq('user_id', this.userId);
@@ -148,6 +123,8 @@ export class InterviewerAgent {
           this.ws?.send(JSON.stringify(setupMessage));
         };
 
+        let isResolved = false;
+
         this.ws.onmessage = async (event) => {
           try {
             let dataStr = event.data;
@@ -159,7 +136,10 @@ export class InterviewerAgent {
             if (msg.setupComplete) {
               console.log('Session setup complete.');
               if (this.onStatusCallback) this.onStatusCallback('Connected! Aayu is about to greet you...');
-              resolve();
+              if (!isResolved) {
+                isResolved = true;
+                resolve();
+              }
               // Trigger the greeting - use realtimeInput.text (works with VAD active)
               setTimeout(() => {
                 this.sendText("Please greet the patient warmly in Nepali to start the conversation.");
@@ -239,14 +219,21 @@ export class InterviewerAgent {
 
         this.ws.onerror = (error) => {
           console.error("WebSocket Error:", error);
+          if (!isResolved) {
+             isResolved = true;
+             reject(error);
+          }
           if (this.onMessageCallback) {
              this.onMessageCallback("Connection error occurred. Please try again.", true);
           }
-          reject(error);
         };
 
         this.ws.onclose = (event) => {
           console.log(`WebSocket connection closed. Code: ${event.code}, Reason: ${event.reason}`);
+          if (!isResolved) {
+             isResolved = true;
+             reject(new Error(`WebSocket connection closed. Code: ${event.code}`));
+          }
           if (event.code !== 1000 && this.onMessageCallback) {
              this.onMessageCallback(`Connection closed unexpectedly. Code: ${event.code}`, true);
           }
@@ -291,7 +278,7 @@ export class InterviewerAgent {
 
   // --- Real-time Microphone Capture ---
   private mediaStream: MediaStream | null = null;
-  private audioProcessor: ScriptProcessorNode | null = null;
+  private audioWorkletNode: AudioWorkletNode | null = null;
   private audioSource: MediaStreamAudioSourceNode | null = null;
 
   public async startMicrophone() {
@@ -300,27 +287,56 @@ export class InterviewerAgent {
       if (!this.audioContext) this.initAudio();
 
       this.audioSource = this.audioContext!.createMediaStreamSource(this.mediaStream);
-      // We need 16kHz PCM. We use ScriptProcessor for cross-browser simplicity in prototype.
-      // (A full app would use AudioWorklet).
-      this.audioProcessor = this.audioContext!.createScriptProcessor(4096, 1, 1);
-
-      this.audioProcessor.onaudioprocess = (e) => {
-        const inputData = e.inputBuffer.getChannelData(0);
-        // Resample from AudioContext rate (24k/48k) to 16kHz
-        const pcm16 = this.downsampleBuffer(inputData, this.audioContext!.sampleRate, 16000);
-
-        // Safely Convert Int16Array to Base64 avoiding spread operator stack exhaustion
-        const uint8 = new Uint8Array(pcm16.buffer);
-        let binaryString = "";
-        for (let i = 0; i < uint8.byteLength; i++) {
-          binaryString += String.fromCharCode(uint8[i]);
+      
+      const workletCode = `
+        class PCMProcessor extends AudioWorkletProcessor {
+          process(inputs, outputs, parameters) {
+            const input = inputs[0];
+            if (input.length > 0) {
+              const channelData = input[0];
+              this.port.postMessage(channelData);
+            }
+            return true;
+          }
         }
-        const base64Pcm = btoa(binaryString);
-        this.sendAudioChunk(base64Pcm);
+        registerProcessor('pcm-processor', PCMProcessor);
+      `;
+      const blob = new Blob([workletCode], { type: 'application/javascript' });
+      const url = URL.createObjectURL(blob);
+      await this.audioContext!.audioWorklet.addModule(url);
+      
+      this.audioWorkletNode = new AudioWorkletNode(this.audioContext!, 'pcm-processor');
+
+      let buffer: Float32Array[] = [];
+      let bufferLength = 0;
+
+      this.audioWorkletNode.port.onmessage = (e) => {
+        buffer.push(e.data);
+        bufferLength += e.data.length;
+
+        if (bufferLength >= 4096) {
+          const combined = new Float32Array(bufferLength);
+          let offset = 0;
+          for (const chunk of buffer) {
+            combined.set(chunk, offset);
+            offset += chunk.length;
+          }
+          buffer = [];
+          bufferLength = 0;
+
+          const pcm16 = this.downsampleBuffer(combined, this.audioContext!.sampleRate, 16000);
+          const uint8 = new Uint8Array(pcm16.buffer);
+          let binaryString = "";
+          for (let i = 0; i < uint8.byteLength; i++) {
+            binaryString += String.fromCharCode(uint8[i]);
+          }
+          const base64Pcm = btoa(binaryString);
+          this.sendAudioChunk(base64Pcm);
+        }
       };
 
-      this.audioSource.connect(this.audioProcessor);
-      this.audioProcessor.connect(this.audioContext!.destination);
+      this.audioSource.connect(this.audioWorkletNode);
+      this.audioWorkletNode.connect(this.audioContext!.destination);
 
     } catch (e) {
       console.error("Microphone error:", e);
@@ -381,9 +397,9 @@ export class InterviewerAgent {
       this.ws = null;
       console.log('Disconnected from Gemini Live API.');
     }
-    if (this.audioProcessor) {
-      this.audioProcessor.disconnect();
-      this.audioProcessor = null;
+    if (this.audioWorkletNode) {
+      this.audioWorkletNode.disconnect();
+      this.audioWorkletNode = null;
     }
     if (this.audioSource) {
       this.audioSource.disconnect();

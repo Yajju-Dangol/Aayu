@@ -9,7 +9,7 @@ import { motion } from 'framer-motion';
 import { processAndUploadPDF } from './lib/knowledge';
 import { InterviewerAgent } from './lib/InterviewerAgent';
 import { supabase } from './lib/supabase';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
+import type { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import LandingPage from './LandingPage';
 
 // --- DATA ---
@@ -31,6 +31,7 @@ export default function App() {
   
   // Auth state
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
   const agentRef = useRef<InterviewerAgent | null>(null);
@@ -45,6 +46,7 @@ export default function App() {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
+      setSession(session);
       setLoadingAuth(false);
       if (currentUser) {
         try {
@@ -64,6 +66,7 @@ export default function App() {
       console.log(`[Auth] Event: ${event}`);
       const currentUser = session?.user ?? null;
       setUser(currentUser);
+      setSession(session);
       setLoadingAuth(false);
       
       if (currentUser && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
@@ -98,7 +101,7 @@ export default function App() {
         setTranscript("Connecting to Aayu...");
         setUserTranscript("");
         if (!user) throw new Error("User not logged in");
-        const agent = new InterviewerAgent(user.id);
+        const agent = new InterviewerAgent(user.id, session?.access_token);
         agentRef.current = agent;
 
         // CRITICAL: unlockAudio must be called synchronously inside the click handler

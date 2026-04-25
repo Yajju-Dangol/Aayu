@@ -8,7 +8,7 @@
  * That's it. InterviewerAgent picks up all tools automatically.
  */
 
-import { supabase } from './supabase';
+import { createAgentSupabase } from './supabase';
 import { searchKnowledge } from './knowledge';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -114,28 +114,24 @@ export async function executeTool(
 ): Promise<Record<string, any>> {
   console.log(`[Tool] ▶ ${toolCall.name}`, toolCall.args);
 
-  if (accessToken) {
-    // Ensure the client uses the latest token for this request
-    // This helps if the background session refresh is failing
-    supabase.auth.setSession({ access_token: accessToken, refresh_token: '' }).catch(() => {});
-  }
+
 
   try {
     switch (toolCall.name) {
       case 'searchHealthKnowledge':
-        return await handleSearchKnowledge(toolCall.args.query, userId);
+        return await handleSearchKnowledge(toolCall.args.query, userId, accessToken || '');
 
       case 'logBloodPressure':
-        return await handleLogBloodPressure(toolCall.args, userId);
+        return await handleLogBloodPressure(toolCall.args, userId, accessToken || '');
 
       case 'logMedicineTaken':
-        return await handleLogMedicine(toolCall.args, userId);
+        return await handleLogMedicine(toolCall.args, userId, accessToken || '');
 
       case 'logMoodAndWellness':
-        return await handleLogMood(toolCall.args, userId);
+        return await handleLogMood(toolCall.args, userId, accessToken || '');
 
       case 'logSymptom':
-        return await handleLogSymptom(toolCall.args, userId);
+        return await handleLogSymptom(toolCall.args, userId, accessToken || '');
 
       default:
         return { result: `Unknown tool: ${toolCall.name}` };
@@ -158,19 +154,20 @@ function withTimeout<T>(promise: Promise<T>, ms = 10000, label = 'operation'): P
 
 // ─── Individual Tool Handlers ─────────────────────────────────────────────────
 
-async function handleSearchKnowledge(query: string, userId: string): Promise<Record<string, any>> {
+async function handleSearchKnowledge(query: string, userId: string, accessToken: string): Promise<Record<string, any>> {
   // Use the robust vector search function from knowledge.ts
   const resultText = await withTimeout(
-    searchKnowledge(query, userId),
+    searchKnowledge(query, userId, accessToken),
     10000, 'searchKnowledge'
   );
 
   return { result: resultText };
 }
 
-async function handleLogBloodPressure(args: any, userId: string): Promise<Record<string, any>> {
+async function handleLogBloodPressure(args: any, userId: string, accessToken: string): Promise<Record<string, any>> {
+  const agentSupabase = createAgentSupabase(accessToken);
   const { error } = await withTimeout(
-    supabase.from('health_logs').insert({
+    agentSupabase.from('health_logs').insert({
       user_id:   userId,
       log_type:  'blood_pressure',
       data:      { systolic: args.systolic, diastolic: args.diastolic, notes: args.notes ?? '' },
@@ -186,9 +183,10 @@ async function handleLogBloodPressure(args: any, userId: string): Promise<Record
   return { result: `Blood pressure ${args.systolic}/${args.diastolic} mmHg logged successfully.` };
 }
 
-async function handleLogMedicine(args: any, userId: string): Promise<Record<string, any>> {
+async function handleLogMedicine(args: any, userId: string, accessToken: string): Promise<Record<string, any>> {
+  const agentSupabase = createAgentSupabase(accessToken);
   const { error } = await withTimeout(
-    supabase.from('health_logs').insert({
+    agentSupabase.from('health_logs').insert({
       user_id:   userId,
       log_type:  'medicine',
       data:      { medicine_name: args.medicine_name ?? 'Daily medicine', taken: args.taken, notes: args.notes ?? '' },
@@ -204,9 +202,10 @@ async function handleLogMedicine(args: any, userId: string): Promise<Record<stri
   return { result: args.taken ? 'Medicine intake recorded.' : 'Missed medicine noted.' };
 }
 
-async function handleLogMood(args: any, userId: string): Promise<Record<string, any>> {
+async function handleLogMood(args: any, userId: string, accessToken: string): Promise<Record<string, any>> {
+  const agentSupabase = createAgentSupabase(accessToken);
   const { error } = await withTimeout(
-    supabase.from('health_logs').insert({
+    agentSupabase.from('health_logs').insert({
       user_id:   userId,
       log_type:  'mood',
       data:      { mood: args.mood, energy_level: args.energy_level ?? null, notes: args.notes ?? '' },
@@ -222,9 +221,10 @@ async function handleLogMood(args: any, userId: string): Promise<Record<string, 
   return { result: `Mood "${args.mood}" logged successfully.` };
 }
 
-async function handleLogSymptom(args: any, userId: string): Promise<Record<string, any>> {
+async function handleLogSymptom(args: any, userId: string, accessToken: string): Promise<Record<string, any>> {
+  const agentSupabase = createAgentSupabase(accessToken);
   const { error } = await withTimeout(
-    supabase.from('health_logs').insert({
+    agentSupabase.from('health_logs').insert({
       user_id:   userId,
       log_type:  'symptom',
       data:      { symptom: args.symptom, severity: args.severity ?? null, duration: args.duration ?? null, notes: args.notes ?? '' },

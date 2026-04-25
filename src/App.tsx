@@ -3,7 +3,7 @@ import {
   Home, Activity, Settings,
   Search, Plus, User,
   Heart, Thermometer, Mic, ShieldAlert, Bot, X, Upload, MoreHorizontal,
-  Coffee, Utensils, Droplets, Battery, Pill, Stethoscope, Moon, Users, TrendingUp
+  Coffee, Utensils, Droplets, Battery, Pill, Stethoscope, Moon, Users, TrendingUp, Menu
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion } from 'framer-motion';
@@ -34,6 +34,7 @@ export default function App() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [trendsData, setTrendsData] = useState<any>(null);
   const [isFetchingTrends, setIsFetchingTrends] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   
   // Auth state
   const [user, setUser] = useState<SupabaseUser | null>(null);
@@ -484,13 +485,30 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
   }
 
   return (
-    <div className="flex h-screen bg-[#FDF8F3] font-sans overflow-hidden">
+    <div className="flex h-screen bg-[#FDF8F3] font-sans overflow-hidden relative">
+      
+      {/* Mobile Sidebar Overlay */}
+      {isMobileSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 md:hidden"
+          onClick={() => setIsMobileSidebarOpen(false)}
+        />
+      )}
 
       {/* Left Sidebar */}
-      <aside className="w-64 bg-white flex flex-col items-center py-8 px-6 rounded-r-[2rem] shadow-sm z-10 shrink-0">
-        <div className="flex items-center space-x-2 w-full pl-2 mb-10">
-          <Activity className="w-6 h-6 text-purple-600" />
-          <span className="text-xl font-bold text-gray-800 tracking-wide">Aayu</span>
+      <aside className={`
+        fixed inset-y-0 left-0 z-40 w-64 bg-white flex flex-col items-center py-8 px-6 rounded-r-[2rem] shadow-xl transition-transform duration-300 transform
+        md:relative md:translate-x-0 md:shadow-sm
+        ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
+        <div className="flex items-center justify-between w-full pl-2 mb-10">
+          <div className="flex items-center space-x-2">
+            <Activity className="w-6 h-6 text-purple-600" />
+            <span className="text-xl font-bold text-gray-800 tracking-wide">Aayu</span>
+          </div>
+          <button onClick={() => setIsMobileSidebarOpen(false)} className="md:hidden p-1 text-gray-400 hover:text-gray-600">
+            <X className="w-6 h-6" />
+          </button>
         </div>
 
         <div className="flex flex-col items-center mb-10">
@@ -514,7 +532,10 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
           ].map((item) => (
             <button
               key={item.name}
-              onClick={() => setActiveMenu(item.name)}
+              onClick={() => {
+                setActiveMenu(item.name);
+                setIsMobileSidebarOpen(false);
+              }}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeMenu === item.name
                   ? 'bg-purple-50 text-purple-700 font-semibold'
                   : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
@@ -535,17 +556,25 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col px-10 py-8 overflow-y-auto">
-        <header className="flex justify-between items-start mb-8 shrink-0">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">
-              {activeMenu === 'Dashboard' ? 'Aayu Voice Assistant' : 
-               activeMenu === 'Trends' ? 'Long-Term Trends' : 'Health Analytics'}
-            </h1>
-            <p className="text-gray-500 mt-1">
-              {activeMenu === 'Dashboard' ? 'Talk to Aayu seamlessly' : 
-               activeMenu === 'Trends' ? 'Track your health evolution over time' : 'Overview of health metrics'}
-            </p>
+      <main className="flex-1 flex flex-col px-4 md:px-10 py-6 md:py-8 overflow-y-auto">
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 shrink-0 gap-4">
+          <div className="flex items-center space-x-4">
+            <button 
+              onClick={() => setIsMobileSidebarOpen(true)}
+              className="md:hidden p-2 bg-white rounded-xl shadow-sm text-gray-600 hover:text-purple-600 transition-colors"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+                {activeMenu === 'Dashboard' ? 'Aayu Voice Assistant' : 
+                 activeMenu === 'Trends' ? 'Long-Term Trends' : 'Health Analytics'}
+              </h1>
+              <p className="text-sm md:text-base text-gray-500 mt-1">
+                {activeMenu === 'Dashboard' ? 'Talk to Aayu seamlessly' : 
+                 activeMenu === 'Trends' ? 'Track your health evolution over time' : 'Overview of health metrics'}
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center">
@@ -577,7 +606,7 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
 
             <button
               onClick={() => setIsAgentFeedOpen(!isAgentFeedOpen)}
-              className="p-2.5 bg-white rounded-xl shadow-sm hover:bg-purple-50 text-purple-600 relative transition-colors ml-4"
+              className="p-2.5 bg-white rounded-xl shadow-sm hover:bg-purple-50 text-purple-600 relative transition-colors"
             >
               <Bot className="w-6 h-6" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
@@ -728,97 +757,29 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
               </div>
               
               {analyticsData ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 flex flex-col hover:shadow-md transition-shadow">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8 mb-12">
+                {[
+                  { label: 'Meal Composition', value: analyticsData.meal_composition, icon: Utensils, color: 'bg-blue-50 text-blue-600', iconColor: 'text-blue-500' },
+                  { label: 'Portion Size', value: analyticsData.portion_size, icon: Coffee, color: 'bg-orange-50 text-orange-600', iconColor: 'text-orange-500' },
+                  { label: 'Hydration', value: analyticsData.hydration, icon: Droplets, color: 'bg-teal-50 text-teal-600', iconColor: 'text-teal-500' },
+                  { label: 'Appetite Levels', value: analyticsData.appetite_levels, icon: Coffee, color: 'bg-purple-50 text-purple-600', iconColor: 'text-purple-500' },
+                  { label: 'Medication', value: analyticsData.medication ? 'Taken' : 'Not Taken', icon: Pill, color: 'bg-pink-50 text-pink-600', iconColor: 'text-pink-500' },
+                  { label: 'Symptom Check', value: analyticsData.symptoms, icon: Stethoscope, color: 'bg-red-50 text-red-600', iconColor: 'text-red-500' },
+                  { label: 'Sleep Quality', value: analyticsData.sleep_quality, icon: Moon, color: 'bg-indigo-50 text-indigo-600', iconColor: 'text-indigo-500' },
+                  { label: 'Energy Levels', value: analyticsData.energy_levels, icon: Battery, color: 'bg-yellow-50 text-yellow-600', iconColor: 'text-yellow-500' },
+                  { label: 'Social Interaction', value: analyticsData.social_interaction, icon: Users, color: 'bg-green-50 text-green-600', iconColor: 'text-green-500' },
+                ].map((item, idx) => (
+                  <div key={idx} className={`${item.color} p-6 rounded-2xl border border-current/10 flex flex-col hover:shadow-md transition-shadow`}>
                     <div className="flex items-center space-x-3 mb-4">
-                      <div className="p-2 bg-blue-500 rounded-lg text-white">
-                        <Utensils className="w-5 h-5" />
+                      <div className={`p-2 ${item.iconColor} bg-white rounded-lg`}>
+                        <item.icon className="w-5 h-5" />
                       </div>
-                      <h4 className="font-semibold text-blue-900">Meal Composition</h4>
+                      <h4 className="font-semibold text-gray-900">{item.label}</h4>
                     </div>
-                    <p className="text-gray-700 font-medium">{analyticsData.meal_composition || 'N/A'}</p>
+                    <p className="text-gray-700 font-medium">{item.value || 'N/A'}</p>
                   </div>
-                  
-                  <div className="bg-orange-50 p-6 rounded-2xl border border-orange-100 flex flex-col hover:shadow-md transition-shadow">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <div className="p-2 bg-orange-500 rounded-lg text-white">
-                        <Utensils className="w-5 h-5" />
-                      </div>
-                      <h4 className="font-semibold text-orange-900">Portion Size</h4>
-                    </div>
-                    <p className="text-gray-700 font-medium">{analyticsData.portion_size || 'N/A'}</p>
-                  </div>
-
-                  <div className="bg-teal-50 p-6 rounded-2xl border border-teal-100 flex flex-col hover:shadow-md transition-shadow">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <div className="p-2 bg-teal-500 rounded-lg text-white">
-                        <Droplets className="w-5 h-5" />
-                      </div>
-                      <h4 className="font-semibold text-teal-900">Hydration</h4>
-                    </div>
-                    <p className="text-gray-700 font-medium">{analyticsData.hydration || 'N/A'}</p>
-                  </div>
-
-                  <div className="bg-purple-50 p-6 rounded-2xl border border-purple-100 flex flex-col hover:shadow-md transition-shadow">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <div className="p-2 bg-purple-500 rounded-lg text-white">
-                        <Coffee className="w-5 h-5" />
-                      </div>
-                      <h4 className="font-semibold text-purple-900">Appetite Levels</h4>
-                    </div>
-                    <p className="text-gray-700 font-medium">{analyticsData.appetite_levels || 'N/A'}</p>
-                  </div>
-
-                  <div className="bg-pink-50 p-6 rounded-2xl border border-pink-100 flex flex-col hover:shadow-md transition-shadow">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <div className="p-2 bg-pink-500 rounded-lg text-white">
-                        <Pill className="w-5 h-5" />
-                      </div>
-                      <h4 className="font-semibold text-pink-900">Medication</h4>
-                    </div>
-                    <p className="text-gray-700 font-medium">{analyticsData.medication || 'N/A'}</p>
-                  </div>
-
-                  <div className="bg-red-50 p-6 rounded-2xl border border-red-100 flex flex-col hover:shadow-md transition-shadow">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <div className="p-2 bg-red-500 rounded-lg text-white">
-                        <Stethoscope className="w-5 h-5" />
-                      </div>
-                      <h4 className="font-semibold text-red-900">Symptom Check</h4>
-                    </div>
-                    <p className="text-gray-700 font-medium">{analyticsData.symptoms || 'N/A'}</p>
-                  </div>
-
-                  <div className="bg-indigo-50 p-6 rounded-2xl border border-indigo-100 flex flex-col hover:shadow-md transition-shadow">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <div className="p-2 bg-indigo-500 rounded-lg text-white">
-                        <Moon className="w-5 h-5" />
-                      </div>
-                      <h4 className="font-semibold text-indigo-900">Sleep Quality</h4>
-                    </div>
-                    <p className="text-gray-700 font-medium">{analyticsData.sleep_quality || 'N/A'}</p>
-                  </div>
-
-                  <div className="bg-yellow-50 p-6 rounded-2xl border border-yellow-100 flex flex-col hover:shadow-md transition-shadow">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <div className="p-2 bg-yellow-500 rounded-lg text-white">
-                        <Battery className="w-5 h-5" />
-                      </div>
-                      <h4 className="font-semibold text-yellow-900">Energy Levels</h4>
-                    </div>
-                    <p className="text-gray-700 font-medium">{analyticsData.energy_levels || 'N/A'}</p>
-                  </div>
-
-                  <div className="bg-green-50 p-6 rounded-2xl border border-green-100 flex flex-col hover:shadow-md transition-shadow">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <div className="p-2 bg-green-500 rounded-lg text-white">
-                        <Users className="w-5 h-5" />
-                      </div>
-                      <h4 className="font-semibold text-green-900">Social Interaction</h4>
-                    </div>
-                    <p className="text-gray-700 font-medium">{analyticsData.social_interaction || 'N/A'}</p>
-                  </div>
-                </div>
+                ))}
+              </div>
               ) : (
                 <div className="text-center py-16">
                   <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -851,18 +812,21 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
         )}
       </main>
 
-      {/* Right Sidebar (Agent Logic Feed) */}
+      {/* Right Sidebar - Agent Feed */}
       {isAgentFeedOpen && (
-        <aside className="w-80 bg-[#FAEEE4] py-8 px-6 rounded-l-[2rem] shadow-sm z-20 flex flex-col shrink-0 animate-in slide-in-from-right-8 duration-300 border-l border-white/50 absolute right-0 h-full">
-          <div className="flex justify-between items-center mb-10">
-            <h3 className="font-bold text-gray-800 text-lg">Agent Logic Feed</h3>
-            <button
-              onClick={() => setIsAgentFeedOpen(false)}
-              className="p-2 bg-white rounded-full text-gray-500 shadow-sm hover:text-red-500 hover:bg-red-50 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+        <>
+          {/* Backdrop for mobile */}
+          <div 
+            className="fixed inset-0 bg-black/10 backdrop-blur-sm z-40 md:hidden"
+            onClick={() => setIsAgentFeedOpen(false)}
+          />
+          <aside className="fixed inset-y-0 right-0 w-80 bg-[#FAEEE4] shadow-2xl p-6 z-50 flex flex-col h-full overflow-hidden transition-all animate-in slide-in-from-right duration-300">
+            <div className="flex justify-between items-center mb-8 shrink-0">
+              <h3 className="text-xl font-bold text-gray-800">Agent Logic Feed</h3>
+              <button onClick={() => setIsAgentFeedOpen(false)} className="p-1 hover:bg-white/50 rounded-full transition-colors">
+                <X className="w-6 h-6 text-gray-500" />
+              </button>
+            </div>
 
           <div className="space-y-6 flex-1 overflow-y-auto pr-2 custom-scrollbar">
             {/* Active Listening State for Dashboard Mode */}
@@ -955,6 +919,7 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
             })}
           </div>
         </aside>
+        </>
       )}
 
       <style>{`

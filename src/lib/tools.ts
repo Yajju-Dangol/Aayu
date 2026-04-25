@@ -99,6 +99,53 @@ export const FUNCTION_DECLARATIONS: FunctionDeclaration[] = [
       required: ['symptom'],
     },
   },
+  {
+    name: 'logDietaryInfo',
+    description: "Log the patient's daily food intake, portion sizes, and appetite.",
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        meal_composition: { type: 'STRING', description: 'What did they eat for their meals?' },
+        portion_size: { type: 'STRING', description: 'Did they finish the whole plate or just half?' },
+        appetite_levels: { type: 'STRING', description: 'Are they feeling hungry or forced to eat?' },
+      },
+      required: ['meal_composition', 'portion_size', 'appetite_levels'],
+    },
+  },
+  {
+    name: 'logHydrationStatus',
+    description: "Log the patient's hydration for the day.",
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        hydration: { type: 'STRING', description: 'How many glasses of water or tea have they had?' },
+      },
+      required: ['hydration'],
+    },
+  },
+  {
+    name: 'logSleepAndEnergy',
+    description: "Log the patient's sleep quality and energy levels.",
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        sleep_quality: { type: 'STRING', description: 'Wake up frequency, do they feel rested?' },
+        energy_levels: { type: 'STRING', description: 'Energy level on a scale of 1 to 5.' },
+      },
+      required: ['sleep_quality', 'energy_levels'],
+    },
+  },
+  {
+    name: 'logSocialInteraction',
+    description: "Log the patient's social interactions for the day.",
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        social_interaction: { type: 'STRING', description: 'Who did they talk to today?' },
+      },
+      required: ['social_interaction'],
+    },
+  },
 ];
 
 // ─── Tool Dispatcher ──────────────────────────────────────────────────────────
@@ -143,6 +190,18 @@ export async function executeTool(
 
       case 'logSymptom':
         return await handleLogSymptom(toolCall.args, userId, accessToken || '');
+
+      case 'logDietaryInfo':
+        return await handleLogDietaryInfo(toolCall.args, userId, accessToken || '');
+
+      case 'logHydrationStatus':
+        return await handleLogHydrationStatus(toolCall.args, userId, accessToken || '');
+
+      case 'logSleepAndEnergy':
+        return await handleLogSleepAndEnergy(toolCall.args, userId, accessToken || '');
+
+      case 'logSocialInteraction':
+        return await handleLogSocialInteraction(toolCall.args, userId, accessToken || '');
 
       default:
         return { result: `Unknown tool: ${toolCall.name}` };
@@ -249,4 +308,64 @@ async function handleLogSymptom(args: any, userId: string, accessToken: string):
     return { result: `Could not save symptom: ${error.message}` };
   }
   return { result: `Symptom "${args.symptom}" logged successfully.` };
+}
+
+async function handleLogDietaryInfo(args: any, userId: string, accessToken: string): Promise<Record<string, any>> {
+  const agentSupabase = createAgentSupabase(accessToken);
+  const { error } = await withTimeout(
+    agentSupabase.from('health_logs').insert({
+      user_id:   userId,
+      log_type:  'dietary_info',
+      data:      args,
+      logged_at: new Date().toISOString(),
+    }),
+    10000, 'logDietaryInfo'
+  );
+  if (error) return { result: `Error: ${error.message}` };
+  return { result: `Dietary info logged successfully.` };
+}
+
+async function handleLogHydrationStatus(args: any, userId: string, accessToken: string): Promise<Record<string, any>> {
+  const agentSupabase = createAgentSupabase(accessToken);
+  const { error } = await withTimeout(
+    agentSupabase.from('health_logs').insert({
+      user_id:   userId,
+      log_type:  'hydration_status',
+      data:      args,
+      logged_at: new Date().toISOString(),
+    }),
+    10000, 'logHydrationStatus'
+  );
+  if (error) return { result: `Error: ${error.message}` };
+  return { result: `Hydration status logged successfully.` };
+}
+
+async function handleLogSleepAndEnergy(args: any, userId: string, accessToken: string): Promise<Record<string, any>> {
+  const agentSupabase = createAgentSupabase(accessToken);
+  const { error } = await withTimeout(
+    agentSupabase.from('health_logs').insert({
+      user_id:   userId,
+      log_type:  'sleep_and_energy',
+      data:      args,
+      logged_at: new Date().toISOString(),
+    }),
+    10000, 'logSleepAndEnergy'
+  );
+  if (error) return { result: `Error: ${error.message}` };
+  return { result: `Sleep and energy logged successfully.` };
+}
+
+async function handleLogSocialInteraction(args: any, userId: string, accessToken: string): Promise<Record<string, any>> {
+  const agentSupabase = createAgentSupabase(accessToken);
+  const { error } = await withTimeout(
+    agentSupabase.from('health_logs').insert({
+      user_id:   userId,
+      log_type:  'social_interaction',
+      data:      args,
+      logged_at: new Date().toISOString(),
+    }),
+    10000, 'logSocialInteraction'
+  );
+  if (error) return { result: `Error: ${error.message}` };
+  return { result: `Social interaction logged successfully.` };
 }

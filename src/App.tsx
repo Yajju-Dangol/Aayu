@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import {
   Home, Activity, Settings,
   Search, Plus, User,
-  Heart, Thermometer, Mic, ShieldAlert, Bot, X, Upload, MoreHorizontal
+  Heart, Thermometer, Mic, ShieldAlert, Bot, X, Upload, MoreHorizontal,
+  Coffee, Utensils, Droplets, Battery, Pill, Stethoscope, Moon, Users, TrendingUp
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion } from 'framer-motion';
@@ -29,6 +30,10 @@ export default function App() {
   const [transcript, setTranscript] = useState('How are you feeling today?');
   const [userTranscript, setUserTranscript] = useState('');
   const [agentLogs, setAgentLogs] = useState<any[]>([]);
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [trendsData, setTrendsData] = useState<any>(null);
+  const [isFetchingTrends, setIsFetchingTrends] = useState(false);
   
   // Auth state
   const [user, setUser] = useState<SupabaseUser | null>(null);
@@ -117,7 +122,36 @@ export default function App() {
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    // Fetch initial analytics
+    supabase.from('health_metrics')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('metric_type', 'session_analysis')
+      .order('recorded_at', { ascending: false })
+      .limit(1)
+      .single()
+      .then(({ data, error }) => {
+        if (!error && data && data.details) setAnalyticsData(data.details);
+      });
+
+    // Subscribe to new analytics
+    const analyticsChannel = supabase.channel('analytics_changes')
+      .on('postgres_changes', { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'health_metrics', 
+          filter: `user_id=eq.${user.id}` 
+       }, (payload) => {
+          if (payload.new.metric_type === 'session_analysis' && payload.new.details) {
+             setAnalyticsData(payload.new.details);
+          }
+      })
+      .subscribe();
+
+    return () => { 
+      supabase.removeChannel(channel); 
+      supabase.removeChannel(analyticsChannel);
+    };
   }, [user]);
 
   const formatToolName = (name: string) => {
@@ -127,6 +161,10 @@ export default function App() {
       case 'logMedicineTaken': return 'Logged Medicine Status';
       case 'logMoodAndWellness': return 'Logged Mood';
       case 'logSymptom': return 'Logged Symptom';
+      case 'logDietaryInfo': return 'Logged Dietary Info';
+      case 'logHydrationStatus': return 'Logged Hydration';
+      case 'logSleepAndEnergy': return 'Logged Sleep & Energy';
+      case 'logSocialInteraction': return 'Logged Social Interaction';
       default: return name;
     }
   };
@@ -143,8 +181,15 @@ export default function App() {
         setIsRecording(false);
         setTranscript("Communication stopped.");
         if (agentRef.current) {
+          const finalTranscript = agentRef.current.fullTranscript;
           agentRef.current.disconnect();
           agentRef.current = null;
+          
+          if (user) {
+            console.log("Session ended.");
+          } else {
+            alert("No conversation data was recorded during this session.");
+          }
         }
       } else {
         setIsRecording(true);
@@ -196,6 +241,213 @@ export default function App() {
     }
   };
 
+  const handleGetLatestData = async () => {
+    if (!user) {
+      console.warn("No user found.");
+      return;
+    }
+    setIsAnalyzing(true);
+    
+    try {
+      console.log("Fetching health logs for today...");
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const token = session?.access_token || supabaseAnonKey;
+
+      // Raw fetch to bypass supabase-js internal queueing/hanging
+      const logsRes = await fetch(`${supabaseUrl}/rest/v1/health_logs?select=*&user_id=eq.${user.id}&logged_at=gte.${today.toISOString()}`, {
+        headers: {
+          'apikey': supabaseAnonKey,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!logsRes.ok) {
+        throw new Error(`Failed to fetch logs: ${await logsRes.text()}`);
+      }
+      
+      const logs = await logsRes.json();
+      console.log(`Found ${logs?.length || 0} logs for today.`);
+
+      if (!logs || logs.length === 0) {
+        console.warn("No logs found, sending empty logs to Gemini.");
+      }
+
+      const systemInstruction = `
+You are a medical data extraction assistant.
+Analyze the provided agent tool logs for today.
+Extract the following information and output it as a valid JSON object. 
+If an answer is missing, return "N/A" for that field.
+- meal_composition: What did they have for meals? (e.g., Rice, Lentils, Spinach)
+- portion_size: Did they finish the whole plate, or just half?
+- hydration: How many glasses of water/tea have they had?
+- appetite_levels: Are they feeling hungry or forced to eat?
+- medication: Did they take all medicines for the day?
+- symptoms: Any symptoms mentioned?
+- sleep_quality: Wake up frequency, do they feel rested?
+- energy_levels: Energy level on a scale of 1 to 5.
+- social_interaction: Who did they talk to today?
+
+Output strictly JSON. Do not include markdown formatting like \`\`\`json.`;
+
+      const prompt = `AGENT LOGS TODAY:\n${JSON.stringify(logs, null, 2)}`;
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      
+      if (!apiKey) {
+        throw new Error("Missing VITE_GEMINI_API_KEY in .env");
+      }
+      
+      console.log("Calling Gemini API...");
+      const controller = new AbortController();
+      const fetchTimeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+      
+      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${apiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemInstruction }] },
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.1 }
+        })
+      });
+      clearTimeout(fetchTimeoutId);
+
+      console.log("Gemini response status:", geminiRes.status);
+      const geminiData = await geminiRes.json();
+      
+      if (!geminiRes.ok) {
+        throw new Error(geminiData.error?.message || "Unknown error from Gemini");
+      }
+      if (geminiData.error) {
+        throw new Error(geminiData.error.message);
+      }
+
+      let jsonStr = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+      jsonStr = jsonStr.replace(/```json/g, '').replace(/```/g, '').trim();
+      console.log("Extracted JSON:", jsonStr);
+      
+      const metricsData = JSON.parse(jsonStr);
+
+      console.log("Uploading to Supabase health_metrics...");
+      
+      const insertRes = await fetch(`${supabaseUrl}/rest/v1/health_metrics`, {
+        method: "POST",
+        headers: {
+          'apikey': supabaseAnonKey,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify({
+          user_id: user.id,
+          metric_type: 'session_analysis',
+          details: metricsData,
+          recorded_at: new Date().toISOString()
+        })
+      });
+
+      if (!insertRes.ok) {
+        throw new Error(`Failed to save metrics: ${await insertRes.text()}`);
+      }
+
+      console.log("Success! Updating UI state.");
+      setAnalyticsData(metricsData);
+    } catch (err: any) {
+      console.error("Error in handleGetLatestData:", err);
+      if (err.name === 'AbortError') {
+        alert("Request timed out. Please check your internet connection.");
+      } else {
+        alert("Failed to analyze data: " + (err.message || "Unknown error"));
+      }
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleGetTrends = async () => {
+    if (!user) return;
+    setIsFetchingTrends(true);
+    
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const token = session?.access_token || supabaseAnonKey;
+
+      const metricsRes = await fetch(`${supabaseUrl}/rest/v1/health_metrics?select=*&user_id=eq.${user.id}&metric_type=eq.session_analysis&order=recorded_at.asc`, {
+        headers: {
+          'apikey': supabaseAnonKey,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!metricsRes.ok) throw new Error(await metricsRes.text());
+      const allMetrics = await metricsRes.json();
+
+      if (!allMetrics || allMetrics.length === 0) {
+        alert("Not enough historical data to generate trends.");
+        return;
+      }
+
+      const promptData = allMetrics.map((m: any) => ({
+        date: new Date(m.recorded_at).toLocaleDateString(),
+        data: m.details
+      }));
+
+      const systemInstruction = `
+You are a medical data analyst. You are given a time-series of a patient's daily health logs.
+Analyze the data and output a JSON object to populate charts for long-term trends.
+The JSON must strictly match this structure:
+{
+  "chartData": [
+    {
+      "date": "MM/DD",
+      "hydrationScore": (integer 0-10),
+      "energyScore": (integer 1-5),
+      "sleepScore": (integer 0-10),
+      "carbsScore": (integer 0-10)
+    }
+  ],
+  "insights": [
+    "A 1-2 sentence clinically valuable insight regarding their Metabolic & Nutritional Trends.",
+    "A 1-2 sentence clinically valuable insight regarding their Circadian & Energy Health.",
+    "A 1-2 sentence clinically valuable insight regarding their Symptom & Medication Correlation."
+  ]
+}
+Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
+
+      const prompt = `HISTORICAL DATA:\n${JSON.stringify(promptData, null, 2)}`;
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
+      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${apiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemInstruction }] },
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.1 }
+        })
+      });
+
+      const geminiData = await geminiRes.json();
+      if (!geminiRes.ok) throw new Error(geminiData.error?.message);
+
+      let jsonStr = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+      jsonStr = jsonStr.replace(/```json/g, '').replace(/```/g, '').trim();
+      setTrendsData(JSON.parse(jsonStr));
+
+    } catch (err: any) {
+      console.error("Error in handleGetTrends:", err);
+      alert("Failed to fetch trends: " + err.message);
+    } finally {
+      setIsFetchingTrends(false);
+    }
+  };
+
   const handleLogout = () => {
     // Fire and forget the server-side logout
     supabase.auth.signOut().catch(console.error);
@@ -242,7 +494,7 @@ export default function App() {
           {[
             { name: 'Dashboard', icon: Home },
             { name: 'Analytics', icon: Activity },
-            { name: 'Alerts', icon: ShieldAlert },
+            { name: 'Trends', icon: TrendingUp },
             { name: 'Settings', icon: Settings },
           ].map((item) => (
             <button
@@ -272,22 +524,38 @@ export default function App() {
         <header className="flex justify-between items-start mb-8 shrink-0">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">
-              {activeMenu === 'Dashboard' ? 'Aayu Voice Assistant' : 'Health Analytics'}
+              {activeMenu === 'Dashboard' ? 'Aayu Voice Assistant' : 
+               activeMenu === 'Trends' ? 'Long-Term Trends' : 'Health Analytics'}
             </h1>
             <p className="text-gray-500 mt-1">
-              {activeMenu === 'Dashboard' ? 'Talk to Aayu seamlessly' : 'Overview of health metrics'}
+              {activeMenu === 'Dashboard' ? 'Talk to Aayu seamlessly' : 
+               activeMenu === 'Trends' ? 'Track your health evolution over time' : 'Overview of health metrics'}
             </p>
           </div>
 
           <div className="flex items-center">
             {activeMenu === 'Analytics' && (
               <div className="flex items-center space-x-4">
-                <button className="p-2.5 bg-white rounded-xl shadow-sm text-gray-500 hover:text-purple-600">
-                  <Search className="w-5 h-5" />
+                <button 
+                  onClick={handleGetLatestData}
+                  disabled={isAnalyzing}
+                  className={`flex items-center space-x-2 bg-purple-600 text-white px-5 py-2.5 rounded-xl hover:bg-purple-700 transition-colors ${isAnalyzing ? 'opacity-70 cursor-not-allowed' : ''}`}
+                >
+                  <Bot className="w-5 h-5" />
+                  <span className="font-medium">{isAnalyzing ? 'Analyzing...' : 'Get Latest Data'}</span>
                 </button>
-                <button className="flex items-center space-x-2 bg-gray-900 text-white px-5 py-2.5 rounded-xl hover:bg-gray-800 transition-colors">
-                  <Plus className="w-5 h-5" />
-                  <span className="font-medium">Add Reminder</span>
+              </div>
+            )}
+            
+            {activeMenu === 'Trends' && (
+              <div className="flex items-center space-x-4">
+                <button 
+                  onClick={handleGetTrends}
+                  disabled={isFetchingTrends}
+                  className={`flex items-center space-x-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-colors ${isFetchingTrends ? 'opacity-70 cursor-not-allowed' : ''}`}
+                >
+                  <TrendingUp className="w-5 h-5" />
+                  <span className="font-medium">{isFetchingTrends ? 'Processing...' : 'Get Trends'}</span>
                 </button>
               </div>
             )}
@@ -366,108 +634,203 @@ export default function App() {
           </div>
         )}
 
+        {activeMenu === 'Trends' && (
+          <div className="flex-1 flex flex-col w-full max-w-5xl mx-auto pb-12">
+            {!trendsData ? (
+              <div className="text-center py-20 mt-10 bg-white rounded-[2rem] border border-gray-100 shadow-sm">
+                <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <TrendingUp className="w-10 h-10 text-blue-500" />
+                </div>
+                <h4 className="text-xl font-bold text-gray-700 mb-2">No Trends Yet</h4>
+                <p className="text-gray-500 max-w-md mx-auto">Click 'Get Trends' to let Gemini analyze your long-term health metrics and build insights graphs.</p>
+              </div>
+            ) : (
+              <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+                
+                {/* AI Insights List */}
+                <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-8">
+                  <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <Bot className="text-blue-500" />
+                    AI Clinical Insights
+                  </h3>
+                  <div className="space-y-4">
+                    {trendsData.insights?.map((insight: string, idx: number) => (
+                      <div key={idx} className="p-4 bg-blue-50 text-blue-900 rounded-xl border border-blue-100 font-medium">
+                        {insight}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Charts Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-8">
+                    <h3 className="text-lg font-bold text-gray-800 mb-6">Metabolic & Nutritional Trends</h3>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={trendsData.chartData}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                          <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#6B7280', fontSize: 12}} dy={10} />
+                          <YAxis domain={[0, 10]} axisLine={false} tickLine={false} tick={{fill: '#6B7280', fontSize: 12}} />
+                          <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                          <Line type="monotone" dataKey="hydrationScore" name="Hydration" stroke="#3B82F6" strokeWidth={3} dot={{r: 4, fill: '#3B82F6'}} activeDot={{r: 6}} />
+                          <Line type="monotone" dataKey="carbsScore" name="Carbs/Portion" stroke="#F59E0B" strokeWidth={3} dot={{r: 4, fill: '#F59E0B'}} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-8">
+                    <h3 className="text-lg font-bold text-gray-800 mb-6">Circadian & Energy Health</h3>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={trendsData.chartData}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                          <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#6B7280', fontSize: 12}} dy={10} />
+                          <YAxis domain={[0, 10]} axisLine={false} tickLine={false} tick={{fill: '#6B7280', fontSize: 12}} />
+                          <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                          <Line type="monotone" dataKey="sleepScore" name="Sleep Quality" stroke="#8B5CF6" strokeWidth={3} dot={{r: 4, fill: '#8B5CF6'}} activeDot={{r: 6}} />
+                          <Line type="monotone" dataKey="energyScore" name="Energy Level" stroke="#10B981" strokeWidth={3} dot={{r: 4, fill: '#10B981'}} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            )}
+          </div>
+        )}
+
         {activeMenu === 'Analytics' && (
           <div className="space-y-10 animate-in fade-in duration-500">
-            {/* Top Feature Cards */}
-            <div className="grid grid-cols-3 gap-6">
-              <div className="bg-purple-700 text-white p-6 rounded-[2rem] shadow-md relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-20">
-                  <Heart className="w-24 h-24" />
-                </div>
-                <div className="relative z-10">
-                  <div className="flex justify-between items-start mb-6">
-                    <span className="bg-white/20 px-3 py-1 rounded-full text-sm backdrop-blur-sm">Latest BP</span>
-                    <MoreHorizontal className="w-5 h-5" />
-                  </div>
-                  <h3 className="text-4xl font-bold mb-2">120/80</h3>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-full bg-purple-900/50 rounded-full h-1.5">
-                      <div className="bg-green-400 h-1.5 rounded-full w-[60%]"></div>
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
+              <div className="flex justify-between items-center mb-8">
+                <h3 className="font-bold text-gray-800 text-2xl">Session AI Insights</h3>
+                <span className="bg-purple-100 text-purple-700 px-4 py-1.5 rounded-full text-sm font-medium">
+                  Latest Data Interpretation
+                </span>
+              </div>
+              
+              {analyticsData ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 flex flex-col hover:shadow-md transition-shadow">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className="p-2 bg-blue-500 rounded-lg text-white">
+                        <Utensils className="w-5 h-5" />
+                      </div>
+                      <h4 className="font-semibold text-blue-900">Meal Composition</h4>
                     </div>
-                    <span className="text-sm font-medium">Normal</span>
+                    <p className="text-gray-700 font-medium">{analyticsData.meal_composition || 'N/A'}</p>
                   </div>
-                </div>
-              </div>
-
-              <div className="bg-teal-500 text-white p-6 rounded-[2rem] shadow-md relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-20">
-                  <Thermometer className="w-24 h-24" />
-                </div>
-                <div className="relative z-10">
-                  <div className="flex justify-between items-start mb-6">
-                    <span className="bg-white/20 px-3 py-1 rounded-full text-sm backdrop-blur-sm">Medicine</span>
-                    <MoreHorizontal className="w-5 h-5" />
-                  </div>
-                  <h3 className="text-4xl font-bold mb-2">Taken</h3>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-full bg-teal-700/50 rounded-full h-1.5">
-                      <div className="bg-white h-1.5 rounded-full w-[100%]"></div>
+                  
+                  <div className="bg-orange-50 p-6 rounded-2xl border border-orange-100 flex flex-col hover:shadow-md transition-shadow">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className="p-2 bg-orange-500 rounded-lg text-white">
+                        <Utensils className="w-5 h-5" />
+                      </div>
+                      <h4 className="font-semibold text-orange-900">Portion Size</h4>
                     </div>
-                    <span className="text-sm font-medium">100%</span>
+                    <p className="text-gray-700 font-medium">{analyticsData.portion_size || 'N/A'}</p>
                   </div>
-                </div>
-              </div>
 
-              <div className="bg-orange-500 text-white p-6 rounded-[2rem] shadow-md relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-20">
-                  <Activity className="w-24 h-24" />
-                </div>
-                <div className="relative z-10">
-                  <div className="flex justify-between items-start mb-6">
-                    <span className="bg-white/20 px-3 py-1 rounded-full text-sm backdrop-blur-sm">Overall Status</span>
-                    <MoreHorizontal className="w-5 h-5" />
+                  <div className="bg-teal-50 p-6 rounded-2xl border border-teal-100 flex flex-col hover:shadow-md transition-shadow">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className="p-2 bg-teal-500 rounded-lg text-white">
+                        <Droplets className="w-5 h-5" />
+                      </div>
+                      <h4 className="font-semibold text-teal-900">Hydration</h4>
+                    </div>
+                    <p className="text-gray-700 font-medium">{analyticsData.hydration || 'N/A'}</p>
                   </div>
-                  <h3 className="text-3xl font-bold mb-2">Stable</h3>
-                  <p className="text-orange-100 text-sm mt-4">Last interaction 2 hrs ago</p>
+
+                  <div className="bg-purple-50 p-6 rounded-2xl border border-purple-100 flex flex-col hover:shadow-md transition-shadow">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className="p-2 bg-purple-500 rounded-lg text-white">
+                        <Coffee className="w-5 h-5" />
+                      </div>
+                      <h4 className="font-semibold text-purple-900">Appetite Levels</h4>
+                    </div>
+                    <p className="text-gray-700 font-medium">{analyticsData.appetite_levels || 'N/A'}</p>
+                  </div>
+
+                  <div className="bg-pink-50 p-6 rounded-2xl border border-pink-100 flex flex-col hover:shadow-md transition-shadow">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className="p-2 bg-pink-500 rounded-lg text-white">
+                        <Pill className="w-5 h-5" />
+                      </div>
+                      <h4 className="font-semibold text-pink-900">Medication</h4>
+                    </div>
+                    <p className="text-gray-700 font-medium">{analyticsData.medication || 'N/A'}</p>
+                  </div>
+
+                  <div className="bg-red-50 p-6 rounded-2xl border border-red-100 flex flex-col hover:shadow-md transition-shadow">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className="p-2 bg-red-500 rounded-lg text-white">
+                        <Stethoscope className="w-5 h-5" />
+                      </div>
+                      <h4 className="font-semibold text-red-900">Symptom Check</h4>
+                    </div>
+                    <p className="text-gray-700 font-medium">{analyticsData.symptoms || 'N/A'}</p>
+                  </div>
+
+                  <div className="bg-indigo-50 p-6 rounded-2xl border border-indigo-100 flex flex-col hover:shadow-md transition-shadow">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className="p-2 bg-indigo-500 rounded-lg text-white">
+                        <Moon className="w-5 h-5" />
+                      </div>
+                      <h4 className="font-semibold text-indigo-900">Sleep Quality</h4>
+                    </div>
+                    <p className="text-gray-700 font-medium">{analyticsData.sleep_quality || 'N/A'}</p>
+                  </div>
+
+                  <div className="bg-yellow-50 p-6 rounded-2xl border border-yellow-100 flex flex-col hover:shadow-md transition-shadow">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className="p-2 bg-yellow-500 rounded-lg text-white">
+                        <Battery className="w-5 h-5" />
+                      </div>
+                      <h4 className="font-semibold text-yellow-900">Energy Levels</h4>
+                    </div>
+                    <p className="text-gray-700 font-medium">{analyticsData.energy_levels || 'N/A'}</p>
+                  </div>
+
+                  <div className="bg-green-50 p-6 rounded-2xl border border-green-100 flex flex-col hover:shadow-md transition-shadow">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className="p-2 bg-green-500 rounded-lg text-white">
+                        <Users className="w-5 h-5" />
+                      </div>
+                      <h4 className="font-semibold text-green-900">Social Interaction</h4>
+                    </div>
+                    <p className="text-gray-700 font-medium">{analyticsData.social_interaction || 'N/A'}</p>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="text-center py-16">
+                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Bot className="w-10 h-10 text-gray-400" />
+                  </div>
+                  <h4 className="text-xl font-bold text-gray-700 mb-2">No Insights Yet</h4>
+                  <p className="text-gray-500">Have a session with Aayu first. After the session, Gemini will automatically interpret the health data here.</p>
+                </div>
+              )}
             </div>
 
-            {/* Charts & Stats Area */}
-            <div className="grid grid-cols-3 gap-8">
-              <div className="col-span-2 bg-white p-6 rounded-3xl shadow-sm">
-                <h3 className="font-bold text-gray-800 mb-6 text-lg">Blood Pressure Trend</h3>
-                <div className="h-64 w-full">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                    <LineChart data={bpData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af' }} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af' }} domain={['dataMin - 10', 'dataMax + 10']} />
-                      <Tooltip
-                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                      />
-                      <Line type="monotone" dataKey="systolic" stroke="#6c2bd9" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
-                      <Line type="monotone" dataKey="diastolic" stroke="#63c5ce" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              <div className="col-span-1 grid grid-rows-2 gap-6">
-                <div className="bg-white rounded-3xl shadow-sm p-6 flex flex-col justify-center items-center text-center">
-                  <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mb-3">
-                    <span className="font-bold text-xl">14</span>
-                  </div>
-                  <h4 className="font-bold text-gray-800">Interactions</h4>
-                  <p className="text-sm text-gray-500 mt-1">This week</p>
-                </div>
-                <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-3xl shadow-sm p-6 relative overflow-hidden border border-blue-100 flex flex-col items-center justify-center text-center">
-                  <h4 className="font-bold text-gray-800 mb-2">Knowledge Base</h4>
-                  <p className="text-sm text-gray-500 mb-4">Upload hospital reports to train Aayu.</p>
-                  <label className={`cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl flex items-center space-x-2 transition-colors z-10 ${isUploading ? 'opacity-50 cursor-wait' : ''}`}>
-                    <Upload className="w-4 h-4" />
-                    <span className="font-medium text-sm">{isUploading ? 'Uploading...' : 'Upload PDF'}</span>
-                    <input
-                      type="file"
-                      accept="application/pdf"
-                      className="hidden"
-                      onChange={handleFileUpload}
-                      disabled={isUploading}
-                    />
-                  </label>
-                  <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-blue-200/50 rounded-full blur-xl"></div>
-                </div>
-              </div>
+            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-3xl shadow-sm p-8 relative overflow-hidden border border-blue-100 flex flex-col items-center justify-center text-center">
+              <h4 className="font-bold text-gray-800 text-xl mb-3">Knowledge Base</h4>
+              <p className="text-gray-600 mb-6">Upload hospital reports and medical history to train Aayu for personalized care.</p>
+              <label className={`cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl flex items-center space-x-3 transition-colors z-10 ${isUploading ? 'opacity-50 cursor-wait' : ''}`}>
+                <Upload className="w-5 h-5" />
+                <span className="font-medium">{isUploading ? 'Uploading & Processing...' : 'Upload Medical PDF'}</span>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                  disabled={isUploading}
+                />
+              </label>
+              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-blue-200/50 rounded-full blur-2xl"></div>
+              <div className="absolute top-10 left-10 w-20 h-20 bg-indigo-200/30 rounded-full blur-xl"></div>
             </div>
           </div>
         )}

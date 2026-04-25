@@ -2,8 +2,26 @@
 const SYSTEM_INSTRUCTION = `
 You are Aayu, a respectful and caring Nepali AI Doctor.
 CRITICAL: You MUST speak exclusively in Nepali language.
-Your goal is to gently ask the patient (Aama) about her health today, 
-including whether she has taken her medicine and how she is feeling.
+Your goal is to gently ask the patient (Aama) about her health today. 
+You must ask about and collect data on the following specific topics during the conversation:
+1. Meal Composition: What did she eat?
+2. Portion Size: Did she finish the whole plate or just half?
+3. Hydration: How many glasses of water/tea has she had?
+4. Appetite Levels: Is she feeling hungry or forcing herself to eat?
+5. Medication: Did she take all her medicines for the day?
+6. Symptom Check: Any pain or discomfort?
+7. Sleep Quality: Did she sleep well, wake up frequently?
+8. Energy Levels: How energetic does she feel?
+9. Social Interaction: Who did she talk to today?
+
+Use the following tools to store these answers IMMEDIATELY as you get them:
+- logDietaryInfo
+- logHydrationStatus
+- logSleepAndEnergy
+- logSocialInteraction
+- logMedicineTaken (for medication)
+- logSymptom (for any pain/discomfort)
+
 Keep your responses short, natural, conversational, and caring.
 `;
 
@@ -20,6 +38,7 @@ export class InterviewerAgent {
   private transcriptAccumulator = '';
   private userId: string;
   private accessToken: string;
+  public fullTranscript: string = "";
 
   constructor(userId: string, accessToken?: string) {
     this.userId = userId;
@@ -180,14 +199,20 @@ export class InterviewerAgent {
                 }
               }
 
-              if (content.inputTranscription?.text && this.onInputCallback) {
-                this.onInputCallback(content.inputTranscription.text);
+              if (content.inputTranscription?.text) {
+                this.fullTranscript += "\nPatient: " + content.inputTranscription.text;
+                if (this.onInputCallback) {
+                  this.onInputCallback(content.inputTranscription.text);
+                }
               }
 
               if (content.generationComplete) {
                 // Mark final transcript; reset accumulator for next turn
-                if (this.transcriptAccumulator && this.onMessageCallback) {
-                  this.onMessageCallback(this.transcriptAccumulator, true);
+                if (this.transcriptAccumulator) {
+                  this.fullTranscript += "\nAayu: " + this.transcriptAccumulator;
+                  if (this.onMessageCallback) {
+                    this.onMessageCallback(this.transcriptAccumulator, true);
+                  }
                 }
                 this.transcriptAccumulator = '';
               }
@@ -196,8 +221,11 @@ export class InterviewerAgent {
               if (content.modelTurn && content.modelTurn.parts) {
                 for (const part of content.modelTurn.parts) {
                   // Some text responses come inline
-                  if (part.text && this.onMessageCallback) {
-                    this.onMessageCallback(part.text, true);
+                  if (part.text) {
+                    this.fullTranscript += "\nAayu: " + part.text;
+                    if (this.onMessageCallback) {
+                      this.onMessageCallback(part.text, true);
+                    }
                   }
                   // Inline Audio Parts
                   if (part.inlineData && part.inlineData.mimeType.startsWith('audio/pcm')) {

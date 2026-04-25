@@ -1,4 +1,4 @@
-import { ArrowRight, Heart, Activity, Brain, ShieldCheck, Mic, FileText, Smartphone, LayoutDashboard, Globe, Zap, Database } from 'lucide-react';
+import { ArrowRight, Heart, Activity, Brain, ShieldCheck, Mic, FileText, Smartphone, LayoutDashboard, Globe, Zap, Database, Pill, Coffee, Droplets, Thermometer, Smile, Users, Search, ClipboardCheck } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { motion } from 'framer-motion';
 
@@ -18,65 +18,78 @@ export default function LandingPage() {
     }
   };
 
+  const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    e.preventDefault();
+    const element = document.getElementById(id);
+    if (element) {
+      const offset = 80; // Offset for the sticky header
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - offset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   return (
-    <div className="bg-[#FDF8F3] min-h-screen text-gray-900 font-sans selection:bg-[#E2FF66] selection:text-black overflow-x-hidden">
-      
+    <div className="bg-[#F9FAF8] min-h-screen text-[#1F2917] font-sans selection:bg-[#395422] selection:text-white overflow-x-hidden">
+
       {/* Navigation */}
-      <nav className="flex items-center justify-between px-6 md:px-10 py-6 max-w-7xl mx-auto relative z-50">
-        <div className="flex items-center space-x-2">
-          <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center rotate-3 shadow-lg">
-            <Activity className="w-6 h-6 text-white" />
+      <nav className="sticky top-0 bg-[#F9FAF8]/80 backdrop-blur-md z-50 border-b border-[#E0E5DA]/50">
+        <div className="flex items-center justify-between px-6 md:px-10 py-6 max-w-7xl mx-auto">
+          <div className="flex items-center space-x-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <img src="/aayu-logo.svg" alt="Aayu Logo" className="h-16 w-auto" />
+            <span className="font-extrabold text-2xl tracking-tighter text-[#1F2917]">AAYU <span className="text-[#395422]">(आयु)</span></span>
           </div>
-          <span className="font-extrabold text-2xl tracking-tighter text-gray-900">AAYU <span className="text-purple-600">(आयु)</span></span>
+          <div className="hidden md:flex items-center space-x-10 font-bold text-sm uppercase tracking-widest text-[#5C6B50]">
+            <a href="#vision" onClick={(e) => scrollToSection(e, 'vision')} className="hover:text-[#395422] transition-colors">Vision</a>
+            <a href="#features" onClick={(e) => scrollToSection(e, 'features')} className="hover:text-[#395422] transition-colors">Features</a>
+            <a href="#agents" onClick={(e) => scrollToSection(e, 'agents')} className="hover:text-[#395422] transition-colors">Agents</a>
+            <a href="#tech" onClick={(e) => scrollToSection(e, 'tech')} className="hover:text-[#395422] transition-colors">Tech</a>
+          </div>
+          <button
+            onClick={handleGoogleLogin}
+            className="bg-[#1F2917] text-white font-bold px-8 py-3 rounded-2xl hover:bg-[#395422] transition-all shadow-xl shadow-black/5"
+          >
+            LOG IN
+          </button>
         </div>
-        <div className="hidden md:flex items-center space-x-10 font-bold text-sm uppercase tracking-widest text-gray-500">
-          <a href="#vision" className="hover:text-purple-600 transition-colors">Vision</a>
-          <a href="#agents" className="hover:text-purple-600 transition-colors">Agents</a>
-          <a href="#tech" className="hover:text-purple-600 transition-colors">Tech</a>
-          <a href="#ui" className="hover:text-purple-600 transition-colors">UI</a>
-        </div>
-        <button 
-          onClick={handleGoogleLogin}
-          className="bg-gray-900 text-white font-bold px-8 py-3 rounded-2xl hover:bg-purple-600 transition-all shadow-xl hover:shadow-purple-200"
-        >
-          LOG IN
-        </button>
       </nav>
 
+
       <main className="max-w-7xl mx-auto px-6 md:px-10">
-        
+
         {/* Hero Section */}
         <section className="pt-12 md:pt-20 pb-24 flex flex-col items-center text-center relative">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-purple-100/50 rounded-full blur-3xl -z-10 animate-pulse"></div>
-          
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="inline-flex items-center space-x-2 bg-white px-4 py-2 rounded-full shadow-sm border border-purple-100 mb-8"
+            className="inline-flex items-center space-x-2 bg-white px-4 py-2 rounded-full shadow-sm border border-[#E0E5DA] mb-8"
           >
-            <span className="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
-            <span className="text-xs font-bold uppercase tracking-widest text-purple-600">Voice-First Nepali AI Doctor</span>
+            <span className="w-2 h-2 bg-[#395422] rounded-full animate-ping"></span>
+            <span className="text-xs font-bold uppercase tracking-widest text-[#395422]">Compassionate Nepali AI Healthcare</span>
           </motion.div>
 
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
             className="text-6xl md:text-8xl font-black leading-none mb-8 tracking-tighter"
           >
-            Empowering Life Through <br/>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400">Simple Conversation.</span>
+            Empowering Life Through <br />
+            <span className="text-[#395422]">Simple Conversation.</span>
           </motion.h1>
 
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className="text-xl text-gray-600 mb-12 max-w-2xl leading-relaxed"
+            className="text-xl text-[#5C6B50] mb-12 max-w-3xl leading-relaxed"
           >
-            Project Aayu (Sanskrit for "Life") is designed to help elderly people manage their health, 
-            medicine, and diet through the most natural interface: their voice.
+            Our Solution: A compassionate AI health companion that listens, understands, and organizes your medical life—designed for Nepali.
           </motion.p>
 
           <motion.div
@@ -84,61 +97,41 @@ export default function LandingPage() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.5 }}
           >
-            <button 
+            <button
               onClick={handleGoogleLogin}
-              className="bg-purple-600 text-white font-black text-lg px-12 py-5 rounded-[2rem] shadow-2xl shadow-purple-200 hover:bg-purple-700 hover:scale-105 transition-all flex items-center space-x-3 group"
+              className="bg-[#395422] text-white font-black text-lg px-12 py-5 rounded-[2rem] shadow-2xl shadow-[#395422]/10 hover:bg-[#2D421B] hover:scale-105 transition-all flex items-center space-x-3 group"
             >
-              <span>GET STARTED</span>
+              <span>START FOR FREE</span>
               <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
             </button>
           </motion.div>
-
-          {/* Floating Elements Decoration */}
-          <div className="absolute top-1/4 left-0 hidden lg:block animate-bounce" style={{ animationDuration: '3s' }}>
-             <Heart className="w-12 h-12 text-pink-400 opacity-40 rotate-12" strokeWidth={1} />
-          </div>
-          <div className="absolute top-1/3 right-0 hidden lg:block animate-bounce" style={{ animationDuration: '4s' }}>
-             <Activity className="w-16 h-16 text-purple-400 opacity-40 -rotate-12" strokeWidth={1} />
-          </div>
         </section>
 
-        {/* The Vision section */}
+        {/* The Problem & Solution section */}
         <section id="vision" className="mb-32 relative">
-          <div className="bg-white rounded-[3rem] p-12 md:p-20 shadow-xl border border-purple-50 flex flex-col md:flex-row items-center gap-16 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-100/50 rounded-full -mr-32 -mt-32 blur-3xl"></div>
-            
+          <div className="bg-white rounded-[3rem] p-12 md:p-20 shadow-xl border border-[#F0F2ED] flex flex-col md:flex-row items-center gap-16 relative overflow-hidden">
             <div className="flex-1 z-10">
               <h2 className="text-4xl md:text-5xl font-black mb-8 leading-tight">
-                The Vision: <br/> 
-                <span className="text-purple-600">A Digital Companion.</span>
+                The Problem: <br />
+                <span className="text-red-600/80">The Health Tracking Gap.</span>
               </h2>
-              <p className="text-lg text-gray-600 leading-relaxed mb-8">
-                In Nepal, many elderly parents live alone while their children work in cities or abroad. 
-                <strong> Aayu</strong> acts as a 24/7 digital companion that speaks their language, remembers their medical history, 
-                and alerts their family if something is wrong.
+              <p className="text-lg text-[#5C6B50] leading-relaxed mb-8">
+                For many, managing chronic health feels like a full-time job. Data is scattered across paper reports, forgotten symptoms go unrecorded, and complex apps feel like a chore—especially for those who aren't tech-savvy.
               </p>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="flex items-start space-x-3">
-                  <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center shrink-0 mt-1">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  </div>
-                  <p className="text-sm font-bold text-gray-700 italic">"Speaking their language natively."</p>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center shrink-0 mt-1">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                  </div>
-                  <p className="text-sm font-bold text-gray-700 italic">"24/7 watchful eye for safety."</p>
-                </div>
+              <div className="p-8 bg-[#F9FAF8] rounded-[2rem] border border-[#E0E5DA]">
+                <h3 className="font-bold text-2xl mb-4 text-[#395422]">Our Solution</h3>
+                <p className="text-[#5C6B50] italic">
+                  "A coordinated team of three AI agents that transform simple talk into life-saving insights, ensuring technology feels like a respectful companion, not a cold machine."
+                </p>
               </div>
             </div>
-            
+
             <div className="flex-1 w-full max-w-md">
               <div className="relative group">
-                <div className="absolute -inset-4 bg-gradient-to-r from-purple-400 to-pink-400 rounded-[2.5rem] blur opacity-25 group-hover:opacity-40 transition-opacity"></div>
-                <img 
-                  src="/assets/aama_using_aayu.png" 
-                  alt="Nepali Grandmother using Aayu" 
+                <div className="absolute -inset-4 bg-[#395422]/5 rounded-[2.5rem] opacity-25 group-hover:opacity-40 transition-opacity"></div>
+                <img
+                  src="/assets/aama_using_aayu.png"
+                  alt="Nepali Grandmother using Aayu"
                   className="relative rounded-[2rem] w-full h-80 object-cover shadow-2xl border-4 border-white"
                 />
               </div>
@@ -146,251 +139,169 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* 3-Agent System */}
-        <section id="agents" className="mb-32">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-6xl font-black mb-6">The "Brains"</h2>
-            <p className="text-gray-500 text-lg">A 3-Agent System working together like a hospital team.</p>
-          </div>
-
+        {/* Key Pillars Section */}
+        <section id="features" className="mb-32">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Interviewer */}
-            <motion.div whileHover={{ y: -10 }} className="bg-white p-10 rounded-[2.5rem] shadow-lg border border-purple-50 relative overflow-hidden group">
-              <div className="w-16 h-16 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
-                <Mic className="w-8 h-8" />
+            {/* Pillar 1 */}
+            <div className="bg-white p-10 rounded-[2.5rem] shadow-lg border border-[#F0F2ED]">
+              <div className="w-14 h-14 bg-[#F2F4EF] text-[#395422] rounded-2xl flex items-center justify-center mb-6">
+                <Mic className="w-7 h-7" />
               </div>
-              <h3 className="text-2xl font-black mb-4">The Interviewer</h3>
-              <p className="text-xs font-bold text-purple-400 uppercase tracking-widest mb-4">The Face</p>
-              <ul className="space-y-4 text-gray-600">
+              <h3 className="text-2xl font-black mb-4">1. Human-First Interface</h3>
+              <ul className="space-y-4">
                 <li className="flex items-start space-x-3">
-                  <ArrowRight className="w-4 h-4 text-purple-400 mt-1 shrink-0" />
-                  <span className="text-sm">Talks to the patient in <strong>respectful Nepali</strong> (Hajur/Tapai).</span>
+                  <span className="text-[#395422] font-bold">●</span>
+                  <p className="text-sm text-gray-600"><strong>Talk, Don’t Type:</strong> Use real-time voice streaming to log your day. It feels like a phone call.</p>
                 </li>
                 <li className="flex items-start space-x-3">
-                  <ArrowRight className="w-4 h-4 text-purple-400 mt-1 shrink-0" />
-                  <span className="text-sm">Uses phone camera to <strong>identify medicine</strong> strips or food.</span>
+                  <span className="text-[#395422] font-bold">●</span>
+                  <p className="text-sm text-gray-600"><strong>Culturally Connected:</strong> Fully localized in Nepali using respectful honorifics (Hajur/Tapai).</p>
+                </li>
+                <li className="flex items-start space-x-3">
+                  <span className="text-[#395422] font-bold">●</span>
+                  <p className="text-sm text-gray-600"><strong>Visual Confirmation:</strong> Live transcription shows exactly what’s being recorded.</p>
                 </li>
               </ul>
-            </motion.div>
+            </div>
 
-            {/* Clinical Analyst */}
-            <motion.div whileHover={{ y: -10 }} className="bg-gray-900 text-white p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
-              <div className="w-16 h-16 bg-purple-600 text-white rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
-                <FileText className="w-8 h-8" />
+            {/* Pillar 2 */}
+            <div className="bg-white p-10 rounded-[2.5rem] shadow-lg border border-[#F0F2ED]">
+              <div className="w-14 h-14 bg-[#F2F4EF] text-[#395422] rounded-2xl flex items-center justify-center mb-6">
+                <Activity className="w-7 h-7" />
               </div>
-              <h3 className="text-2xl font-black mb-4">The Clinical Analyst</h3>
-              <p className="text-xs font-bold text-purple-400 uppercase tracking-widest mb-4">The Expert</p>
-              <ul className="space-y-4 text-gray-300">
-                <li className="flex items-start space-x-3">
-                  <ArrowRight className="w-4 h-4 text-purple-400 mt-1 shrink-0" />
-                  <span className="text-sm">Reads long, complicated <strong>hospital PDF reports</strong> instantly.</span>
-                </li>
-                <li className="flex items-start space-x-3">
-                  <ArrowRight className="w-4 h-4 text-purple-400 mt-1 shrink-0" />
-                  <span className="text-sm">Cross-checks vitals with doctor's notes for <strong>safe advice</strong>.</span>
-                </li>
-              </ul>
-            </motion.div>
+              <h3 className="text-2xl font-black mb-4">2. 360° Health Diary</h3>
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                <div className="flex items-center space-x-2 text-xs font-bold text-gray-500 uppercase"><Pill className="w-3 h-3" /> Meds</div>
+                <div className="flex items-center space-x-2 text-xs font-bold text-gray-500 uppercase"><Thermometer className="w-3 h-3" /> Vitals</div>
+                <div className="flex items-center space-x-2 text-xs font-bold text-gray-500 uppercase"><Coffee className="w-3 h-3" /> Energy</div>
+                <div className="flex items-center space-x-2 text-xs font-bold text-gray-500 uppercase"><Droplets className="w-3 h-3" /> Water</div>
+              </div>
+              <p className="text-sm text-gray-600">Captures every detail—from food data and symptoms to social interactions and emotional moods.</p>
+            </div>
 
-            {/* Guardian */}
-            <motion.div whileHover={{ y: -10 }} className="bg-white p-10 rounded-[2.5rem] shadow-lg border border-purple-50 relative overflow-hidden group">
-              <div className="w-16 h-16 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
-                <ShieldCheck className="w-8 h-8" />
+            {/* Pillar 3 */}
+            <div className="bg-white p-10 rounded-[2.5rem] shadow-lg border border-[#F0F2ED]">
+              <div className="w-14 h-14 bg-[#F2F4EF] text-[#395422] rounded-2xl flex items-center justify-center mb-6">
+                <FileText className="w-7 h-7" />
               </div>
-              <h3 className="text-2xl font-black mb-4">The Guardian</h3>
-              <p className="text-xs font-bold text-orange-400 uppercase tracking-widest mb-4">The Sentinel</p>
-              <ul className="space-y-4 text-gray-600">
+              <h3 className="text-2xl font-black mb-4">3. Paper to Intelligence</h3>
+              <ul className="space-y-4">
                 <li className="flex items-start space-x-3">
-                  <ArrowRight className="w-4 h-4 text-orange-400 mt-1 shrink-0" />
-                  <span className="text-sm">Never sleeps. Watches patient data <strong>24/7</strong> for anomalies.</span>
+                  <span className="text-[#395422] font-bold">●</span>
+                  <p className="text-sm text-gray-600"><strong>Bridge:</strong> Upload PDF hospital reports and the AI automatically "reads" and remembers them.</p>
                 </li>
                 <li className="flex items-start space-x-3">
-                  <ArrowRight className="w-4 h-4 text-orange-400 mt-1 shrink-0" />
-                  <span className="text-sm">Sends <strong>WhatsApp alerts</strong> if vitals are too high or meds missed.</span>
+                  <span className="text-[#395422] font-bold">●</span>
+                  <p className="text-sm text-gray-600"><strong>Smart Search:</strong> Ask questions about your medical records and get instant answers.</p>
                 </li>
               </ul>
-            </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* The Tri-Agent System */}
+        <section id="agents" className="mb-32">
+          <div className="bg-[#1F2917] rounded-[4rem] p-12 md:p-20 text-white relative overflow-hidden">
+            <div className="relative z-10">
+              <h2 className="text-4xl md:text-6xl font-black mb-4">The Tri-Agent System</h2>
+              <p className="text-gray-400 text-lg mb-16 max-w-2xl">Three specialized AI personas working in harmony to solve the complex problem of elderly health management.</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+                <div className="space-y-6">
+                  <div className="w-16 h-16 bg-[#395422] rounded-2xl flex items-center justify-center">
+                    <Mic className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold">Agent 1: The Compassionate Listener</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    The "Face" of Aayu. Handles fluid, back-and-forth Nepali talking. No buttons required. It silently triggers tools to log 9 critical health metrics while you chat.
+                  </p>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="w-16 h-16 bg-[#395422] rounded-2xl flex items-center justify-center">
+                    <ClipboardCheck className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold">Agent 2: The Digital Registrar</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    The "Organizer". Works behind the scenes to turn messy talk into structured data. It populates your visual "Health Card" system and maintains a logic feed.
+                  </p>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="w-16 h-16 bg-[#395422] rounded-2xl flex items-center justify-center">
+                    <ShieldCheck className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold">Agent 3: The Health Guardian</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    The "Visionary". Analyzes long-term trends over months and connects the dots across your entire medical history to spot patterns a human might miss.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
         {/* Technology */}
         <section id="tech" className="mb-32">
-          <div className="bg-[#E2FF66] rounded-[3rem] p-12 md:p-20 relative overflow-hidden">
-            <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-white/20 rounded-full"></div>
-            
-            <h2 className="text-4xl md:text-5xl font-black mb-16 relative z-10">The Technology</h2>
-            
+          <div className="bg-[#F0F2ED] rounded-[3rem] p-12 md:p-20 relative overflow-hidden border border-[#E0E5DA]">
+            <h2 className="text-4xl md:text-5xl font-black mb-16 relative z-10 text-[#395422]">The Technology</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative z-10">
               <div className="space-y-4">
                 <div className="flex items-center space-x-3">
-                  <Zap className="w-6 h-6 text-purple-700" />
-                  <h4 className="text-xl font-bold">Gemini 1.5 Flash Live</h4>
+                  <Zap className="w-6 h-6 text-[#395422]" />
+                  <h4 className="text-xl font-bold text-[#1F2917]">Gemini 3.1 Flash Live</h4>
                 </div>
-                <p className="text-gray-800 font-medium">The latest AI from Google allows instant voice conversation with zero awkward delays. It feels like a real call.</p>
+                <p className="text-[#5C6B50] font-medium">Powering the "Compassionate Listener" with zero-latency multimodal voice streaming.</p>
               </div>
-
               <div className="space-y-4">
                 <div className="flex items-center space-x-3">
-                  <Database className="w-6 h-6 text-purple-700" />
-                  <h4 className="text-xl font-bold">Supabase Memory</h4>
+                  <Database className="w-6 h-6 text-[#395422]" />
+                  <h4 className="text-xl font-bold text-[#1F2917]">Supabase Vector</h4>
                 </div>
-                <p className="text-gray-800 font-medium">Secure health data storage using "Vector Search" to find specific medical facts from years of history in seconds.</p>
+                <p className="text-[#5C6B50] font-medium">The brain of the "Digital Registrar", organizing and searching through medical memory instantly.</p>
               </div>
-
               <div className="space-y-4">
                 <div className="flex items-center space-x-3">
-                  <Globe className="w-6 h-6 text-purple-700" />
-                  <h4 className="text-xl font-bold">Edge Functions</h4>
+                  <Globe className="w-6 h-6 text-[#395422]" />
+                  <h4 className="text-xl font-bold text-[#1F2917]">Gemini AI</h4>
                 </div>
-                <p className="text-gray-800 font-medium">Small bits of code acting as a lightning-fast "bridge" between the AI's pulse and the secure database.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Dual Look / Design */}
-        <section id="ui" className="mb-32">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-6xl font-black mb-6 italic tracking-tighter">Adaptive Design</h2>
-            <p className="text-gray-500 text-lg">One app, two distinct experiences tailored for specific needs.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            {/* For the Patient */}
-            <div className="bg-white rounded-[3rem] p-4 shadow-xl border border-purple-50 group overflow-hidden">
-              <div className="bg-purple-50 p-8 rounded-[2.5rem] h-full flex flex-col">
-                <div className="flex items-center justify-between mb-8">
-                  <div className="flex items-center space-x-3">
-                    <Smartphone className="w-6 h-6 text-purple-600" />
-                    <span className="font-black uppercase tracking-widest text-xs">Elderly View</span>
-                  </div>
-                  <div className="w-3 h-3 bg-purple-600 rounded-full animate-ping"></div>
-                </div>
-                
-                <h3 className="text-3xl font-black mb-6">Interface for the Elderly</h3>
-                <ul className="space-y-6 mb-10">
-                  <li className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center">
-                      <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-                    </div>
-                    <span className="font-bold text-gray-700">One Big Pulsating Button</span>
-                  </li>
-                  <li className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center">
-                      <span className="font-black text-purple-600 text-sm">क</span>
-                    </div>
-                    <span className="font-bold text-gray-700">Live Nepali Translation</span>
-                  </li>
-                  <li className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-4 bg-green-400 rounded-full"></div>
-                        <div className="w-2 h-4 bg-red-400 rounded-full"></div>
-                      </div>
-                    </div>
-                    <span className="font-bold text-gray-700">Large Visual Health Cards</span>
-                  </li>
-                </ul>
-                <div className="mt-auto relative w-full h-48 bg-white rounded-2xl border-2 border-dashed border-purple-200 flex items-center justify-center overflow-hidden">
-                   <img 
-                     src="/assets/buba_using_aayu.png" 
-                     alt="Nepali Grandfather talking to Aayu" 
-                     className="absolute inset-0 w-full h-full object-cover opacity-50 transition-opacity group-hover:opacity-80"
-                   />
-                   <div className="relative w-20 h-20 bg-purple-600 rounded-full flex items-center justify-center animate-pulse z-10 shadow-xl">
-                      <Mic className="w-10 h-10 text-white" />
-                   </div>
-                </div>
-              </div>
-            </div>
-
-            {/* For the Caretaker */}
-            <div className="bg-gray-900 rounded-[3rem] p-4 shadow-xl border border-gray-800 group overflow-hidden">
-              <div className="bg-gray-800 p-8 rounded-[2.5rem] h-full flex flex-col text-white">
-                <div className="flex items-center justify-between mb-8">
-                  <div className="flex items-center space-x-3">
-                    <LayoutDashboard className="w-6 h-6 text-purple-400" />
-                    <span className="font-black uppercase tracking-widest text-xs text-gray-400">Caretaker Dashboard</span>
-                  </div>
-                </div>
-                
-                <h3 className="text-3xl font-black mb-6">Expert Oversight</h3>
-                <ul className="space-y-6 mb-10 text-gray-300">
-                  <li className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-gray-700 rounded-full shadow-sm flex items-center justify-center">
-                      <Activity className="w-5 h-5 text-purple-400" />
-                    </div>
-                    <span className="font-bold">Granular Health Charts</span>
-                  </li>
-                  <li className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-gray-700 rounded-full shadow-sm flex items-center justify-center">
-                      <Brain className="w-5 h-5 text-purple-400" />
-                    </div>
-                    <span className="font-bold">Agent Logic Feed (Transparency)</span>
-                  </li>
-                  <li className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-gray-700 rounded-full shadow-sm flex items-center justify-center">
-                      <Activity className="w-5 h-5 text-purple-400" />
-                    </div>
-                    <span className="font-bold">Real-time Emergency Triggers</span>
-                  </li>
-                </ul>
-                <div className="mt-auto relative w-full h-40 bg-gray-900 rounded-2xl border-2 border-dashed border-gray-700 p-4">
-                   <div className="flex space-x-2 items-end h-full">
-                      <div className="bg-purple-600 w-full rounded-t-lg h-1/2"></div>
-                      <div className="bg-purple-400 w-full rounded-t-lg h-3/4"></div>
-                      <div className="bg-purple-500 w-full rounded-t-lg h-1/3"></div>
-                      <div className="bg-purple-300 w-full rounded-t-lg h-full"></div>
-                      <div className="bg-purple-600 w-full rounded-t-lg h-2/3"></div>
-                   </div>
-                </div>
+                <p className="text-[#5C6B50] font-medium">Handling the complex data to a simple understandable format.</p>
               </div>
             </div>
           </div>
         </section>
 
         {/* Footer Banner */}
-        <section className="bg-purple-600 rounded-[4rem] p-16 md:p-24 text-center text-white relative overflow-hidden mb-24">
-           <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full -mr-48 -mt-48 blur-3xl"></div>
-           <div className="absolute bottom-0 left-0 w-64 h-64 bg-pink-500/20 rounded-full -ml-32 -mb-32 blur-3xl"></div>
-           
-           <h2 className="text-4xl md:text-6xl font-black mb-12 relative z-10 leading-tight">
-             Join the Future of <br/> Elderly Healthcare.
-           </h2>
-           
-           <div className="flex flex-col md:flex-row items-center justify-center gap-6 relative z-10">
-              <button 
-                onClick={handleGoogleLogin}
-                className="bg-white text-purple-600 font-black text-xl px-12 py-5 rounded-[2rem] shadow-2xl hover:scale-105 transition-all w-full md:w-auto"
-              >
-                START FOR FREE
-              </button>
-              <button className="bg-purple-700/50 backdrop-blur-md text-white border-2 border-white/20 font-black text-xl px-12 py-5 rounded-[2rem] hover:bg-purple-700 transition-all w-full md:w-auto">
-                CONTACT US
-              </button>
-           </div>
-        </section>
-
-      </main>
-      
-      <footer className="max-w-7xl mx-auto px-10 py-16 flex flex-col md:flex-row items-center justify-between border-t border-purple-100">
-         <div className="flex items-center space-x-2 mb-8 md:mb-0">
-          <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center rotate-3 shrink-0">
-            <Activity className="w-5 h-5 text-white" />
+        <section className="bg-[#395422] rounded-[4rem] p-16 md:p-24 text-center text-white relative overflow-hidden mb-24 shadow-2xl shadow-[#395422]/20">
+          <h2 className="text-4xl md:text-6xl font-black mb-12 relative z-10 leading-tight">
+            Join the Future of <br /> Compassionate Healthcare.
+          </h2>
+          <div className="flex flex-col md:flex-row items-center justify-center gap-6 relative z-10">
+            <button onClick={handleGoogleLogin} className="bg-white text-[#395422] font-black text-xl px-12 py-5 rounded-[2rem] shadow-2xl hover:scale-105 transition-all w-full md:w-auto">
+              START FOR FREE
+            </button>
+            <button className="bg-[#1F2917] text-white border-2 border-white/10 font-black text-xl px-12 py-5 rounded-[2rem] hover:bg-[#1F2917]/80 transition-all w-full md:w-auto">
+              CONTACT US
+            </button>
           </div>
-          <span className="font-black text-xl tracking-tighter">AAYU <span className="text-purple-600">PRO</span></span>
-         </div>
-         
-         <div className="flex flex-wrap justify-center gap-8 md:gap-12 text-sm font-bold uppercase tracking-widest text-gray-500">
-           <a href="#vision" className="hover:text-purple-600">Vision</a>
-           <a href="#agents" className="hover:text-purple-600">Agents</a>
-           <a href="#tech" className="hover:text-purple-600">Technology</a>
-           <a href="#" className="hover:text-purple-600">Privacy Policy</a>
-         </div>
+        </section>
+      </main>
 
-         <div className="mt-8 md:mt-0 text-gray-400 text-xs font-medium">
-           &copy; 2026 Project Aayu. Built with Gemini AI.
-         </div>
+      <footer className="max-w-7xl mx-auto px-10 py-16 flex flex-col md:flex-row items-center justify-between border-t border-[#E0E5DA]">
+        <div className="flex items-center space-x-2 mb-8 md:mb-0">
+          <img src="/aayu-logo.svg" alt="Aayu Logo" className="h-12 w-auto" />
+          <span className="font-black text-xl tracking-tighter text-[#1F2917]">AAYU</span>
+        </div>
+        <div className="flex flex-wrap justify-center gap-8 md:gap-12 text-sm font-bold uppercase tracking-widest text-[#5C6B50]">
+          <a href="#vision" onClick={(e) => scrollToSection(e, 'vision')} className="hover:text-[#395422]">Vision</a>
+          <a href="#features" onClick={(e) => scrollToSection(e, 'features')} className="hover:text-[#395422]">Features</a>
+          <a href="#agents" onClick={(e) => scrollToSection(e, 'agents')} className="hover:text-[#395422]">Agents</a>
+          <a href="#tech" onClick={(e) => scrollToSection(e, 'tech')} className="hover:text-[#395422]">Technology</a>
+        </div>
+
+        <div className="mt-8 md:mt-0 text-[#5C6B50]/50 text-xs font-medium">
+          &copy; 2026 Project Aayu.
+        </div>
       </footer>
     </div>
   );

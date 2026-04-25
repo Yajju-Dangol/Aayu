@@ -476,7 +476,7 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
   }
 
   return (
-    <div className="flex h-screen bg-[#FDF8F3] font-sans overflow-hidden relative">
+    <div className="flex h-screen bg-[#F9FAF8] font-sans overflow-hidden relative text-[#1F2917]">
       
       {/* Mobile Sidebar Overlay */}
       {isMobileSidebarOpen && (
@@ -494,25 +494,24 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
       `}>
         <div className="flex items-center justify-between w-full pl-2 mb-10">
           <div className="flex items-center space-x-2">
-            <Activity className="w-6 h-6 text-purple-600" />
-            <span className="text-xl font-bold text-gray-800 tracking-wide">Aayu</span>
+            <img src="/aayu-logo.svg" alt="Aayu Logo" className="h-10 w-auto" />
+            <span className="text-xl font-bold text-[#1F2917] tracking-wide">Aayu</span>
           </div>
           <button onClick={() => setIsMobileSidebarOpen(false)} className="md:hidden p-1 text-gray-400 hover:text-gray-600">
             <X className="w-6 h-6" />
           </button>
         </div>
-
         <div className="flex flex-col items-center mb-10">
-          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4 overflow-hidden border-4 border-white shadow-md">
+          <div className="w-20 h-20 bg-[#F2F4EF] rounded-full flex items-center justify-center mb-4 overflow-hidden border-4 border-white shadow-md">
             {user?.user_metadata?.avatar_url ? (
               <img src={user.user_metadata.avatar_url} alt="Profile" className="w-full h-full object-cover" />
             ) : (
-              <User className="w-10 h-10 text-blue-500" />
+              <User className="w-10 h-10 text-[#395422]" />
             )}
           </div>
-          <span className="text-xs font-semibold text-orange-500 bg-orange-100 px-3 py-1 rounded-full mb-2">Patient</span>
-          <h2 className="font-bold text-gray-800">{user?.user_metadata?.full_name || 'Aama Thapa'}</h2>
-          <p className="text-sm text-gray-500">Connected via Google</p>
+          <span className="text-xs font-bold text-[#395422] bg-[#F2F4EF] px-4 py-1 rounded-full mb-2 uppercase tracking-wider">Patient</span>
+          <h2 className="font-bold text-[#1F2917]">{user?.user_metadata?.full_name || 'Aama Thapa'}</h2>
+          <p className="text-sm text-[#5C6B50]">Connected via Google</p>
         </div>
 
         <nav className="w-full flex flex-col space-y-2 flex-1">
@@ -528,8 +527,8 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
                 setIsMobileSidebarOpen(false);
               }}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeMenu === item.name
-                  ? 'bg-purple-50 text-purple-700 font-semibold'
-                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                  ? 'bg-[#F2F4EF] text-[#395422] font-semibold'
+                  : 'text-[#5C6B50] hover:bg-[#F2F4EF] hover:text-[#395422]'
                 }`}
             >
               <item.icon className="w-5 h-5" />
@@ -552,29 +551,29 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
           <div className="flex items-center space-x-4">
             <button 
               onClick={() => setIsMobileSidebarOpen(true)}
-              className="md:hidden p-2 bg-white rounded-xl shadow-sm text-gray-600 hover:text-purple-600 transition-colors"
+              className="md:hidden p-2 bg-white rounded-xl shadow-sm text-[#5C6B50] hover:text-[#395422] transition-colors"
             >
               <Menu className="w-6 h-6" />
             </button>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+              <h1 className="text-2xl md:text-3xl font-bold text-[#1F2917]">
                 {activeMenu === 'Dashboard' ? 'Aayu Voice Assistant' : 
                  activeMenu === 'Trends' ? 'Long-Term Trends' : 'Health Analytics'}
               </h1>
-              <p className="text-sm md:text-base text-gray-500 mt-1">
+              <p className="text-sm md:text-base text-[#5C6B50] mt-1">
                 {activeMenu === 'Dashboard' ? 'Talk to Aayu seamlessly' : 
                  activeMenu === 'Trends' ? 'Track your health evolution over time' : 'Overview of health metrics'}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center">
+          <div className="flex items-center gap-4">
             {activeMenu === 'Analytics' && (
               <div className="flex items-center space-x-4">
                 <button 
                   onClick={handleGetLatestData}
                   disabled={isAnalyzing}
-                  className={`flex items-center space-x-2 bg-purple-600 text-white px-5 py-2.5 rounded-xl hover:bg-purple-700 transition-colors ${isAnalyzing ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  className={`flex items-center space-x-2 bg-[#395422] text-white px-5 py-2.5 rounded-xl hover:bg-[#2D421B] transition-colors ${isAnalyzing ? 'opacity-70 cursor-not-allowed' : ''}`}
                 >
                   <Bot className="w-5 h-5" />
                   <span className="font-medium">{isAnalyzing ? 'Analyzing...' : 'Get Latest Data'}</span>
@@ -587,7 +586,7 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
                 <button 
                   onClick={handleGetTrends}
                   disabled={isFetchingTrends}
-                  className={`flex items-center space-x-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-colors ${isFetchingTrends ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  className={`flex items-center space-x-2 bg-[#1F2917] text-white px-5 py-2.5 rounded-xl hover:bg-[#1F2917]/80 transition-colors ${isFetchingTrends ? 'opacity-70 cursor-not-allowed' : ''}`}
                 >
                   <TrendingUp className="w-5 h-5" />
                   <span className="font-medium">{isFetchingTrends ? 'Processing...' : 'Get Trends'}</span>
@@ -597,10 +596,10 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
 
             <button
               onClick={() => setIsAgentFeedOpen(!isAgentFeedOpen)}
-              className="p-2.5 bg-white rounded-xl shadow-sm hover:bg-purple-50 text-purple-600 relative transition-colors"
+              className="p-2.5 bg-white rounded-xl shadow-sm hover:bg-[#F2F4EF] text-[#395422] relative transition-colors"
             >
               <Bot className="w-6 h-6" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
           </div>
         </header>
@@ -609,8 +608,8 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
           <div className="flex-1 flex flex-col items-center justify-center w-full max-w-3xl mx-auto pb-12">
 
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-medium text-gray-700 mb-2">नमस्ते आमा (Namaste Aama)</h2>
-              <p className="text-lg text-gray-500">How are you feeling today?</p>
+              <h2 className="text-3xl font-bold text-[#1F2917] mb-2">नमस्ते आमा (Namaste Aama)</h2>
+              <p className="text-lg text-[#5C6B50]">How are you feeling today?</p>
             </div>
 
             <div className="relative flex items-center justify-center mt-12 w-full h-64">
@@ -633,7 +632,7 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
                 onClick={toggleRecording}
                 className={`relative w-40 h-40 rounded-full flex items-center justify-center shadow-2xl transition-colors duration-300 z-10 ${isRecording
                     ? 'bg-red-500 hover:bg-red-600'
-                    : 'bg-[var(--color-brand-purple)] hover:bg-purple-700'
+                    : 'bg-[#395422] hover:bg-[#2D421B]'
                   }`}
               >
                 <Mic className="w-16 h-16 text-white" />
@@ -647,20 +646,20 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
               className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 w-full min-h-[150px] flex flex-col items-center justify-center text-center mt-8 gap-4"
             >
               {isRecording ? (
-                <div className="w-full flex flex-col space-y-4">
-                  <div className="w-full bg-purple-50 p-4 rounded-xl text-left border border-purple-100 relative">
-                    <span className="text-xs font-bold text-purple-400 absolute top-2 right-3 uppercase">Aayu AI</span>
-                    <p className="text-lg font-medium text-purple-700 mt-2">{transcript}</p>
+               <div className="w-full flex flex-col space-y-4">
+                  <div className="w-full bg-[#F2F4EF] p-4 rounded-xl text-left border border-[#395422]/10 relative">
+                    <span className="text-xs font-bold text-[#395422]/50 absolute top-2 right-3 uppercase">Aayu AI</span>
+                    <p className="text-lg font-medium text-[#395422] mt-2">{transcript}</p>
                   </div>
                   {userTranscript && (
-                    <div className="w-full bg-blue-50 p-4 rounded-xl text-left border border-blue-100 relative">
-                      <span className="text-xs font-bold text-blue-400 absolute top-2 right-3 uppercase">You</span>
-                      <p className="text-lg font-medium text-blue-700 mt-2">{userTranscript}</p>
+                    <div className="w-full bg-[#1F2917]/5 p-4 rounded-xl text-left border border-[#1F2917]/10 relative">
+                      <span className="text-xs font-bold text-[#1F2917]/50 absolute top-2 right-3 uppercase">You</span>
+                      <p className="text-lg font-medium text-[#1F2917] mt-2">{userTranscript}</p>
                     </div>
                   )}
                 </div>
               ) : (
-                <p className="text-xl font-medium leading-relaxed text-gray-700">
+                <p className="text-xl font-bold leading-relaxed text-[#1F2917]">
                   {transcript === 'Communication stopped.' ? 'Communication stopped.' : 'Tap the microphone to start talking!'}
                 </p>
               )}
@@ -672,25 +671,25 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
         {activeMenu === 'Trends' && (
           <div className="flex-1 flex flex-col w-full max-w-5xl mx-auto pb-12">
             {!trendsData ? (
-              <div className="text-center py-20 mt-10 bg-white rounded-[2rem] border border-gray-100 shadow-sm">
-                <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <TrendingUp className="w-10 h-10 text-blue-500" />
+              <div className="text-center py-20 mt-10 bg-white rounded-[2rem] border border-[#F2F4EF] shadow-sm">
+                <div className="w-20 h-20 bg-[#F2F4EF] rounded-full flex items-center justify-center mx-auto mb-4">
+                  <TrendingUp className="w-10 h-10 text-[#395422]" />
                 </div>
-                <h4 className="text-xl font-bold text-gray-700 mb-2">No Trends Yet</h4>
-                <p className="text-gray-500 max-w-md mx-auto">Click 'Get Trends' to let Gemini analyze your long-term health metrics and build insights graphs.</p>
+                <h4 className="text-xl font-bold text-[#1F2917] mb-2">No Trends Yet</h4>
+                <p className="text-[#5C6B50] max-w-md mx-auto">Click 'Get Trends' to let Gemini analyze your long-term health metrics and build insights graphs.</p>
               </div>
             ) : (
               <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
                 
                 {/* AI Insights List */}
                 <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-8">
-                  <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                    <Bot className="text-blue-500" />
+                  <h3 className="text-xl font-bold text-[#1F2917] mb-6 flex items-center gap-2">
+                    <Bot className="text-[#395422]" />
                     AI Clinical Insights
                   </h3>
                   <div className="space-y-4">
                     {trendsData.insights?.map((insight: string, idx: number) => (
-                      <div key={idx} className="p-4 bg-blue-50 text-blue-900 rounded-xl border border-blue-100 font-medium">
+                      <div key={idx} className="p-4 bg-[#F2F4EF] text-[#395422] rounded-xl border border-[#395422]/10 font-medium">
                         {insight}
                       </div>
                     ))}
@@ -704,12 +703,12 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
                     <div className="h-64">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={trendsData.chartData}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                          <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#6B7280', fontSize: 12}} dy={10} />
-                          <YAxis domain={[0, 10]} axisLine={false} tickLine={false} tick={{fill: '#6B7280', fontSize: 12}} />
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E0E5DA" />
+                          <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#5C6B50', fontSize: 12}} dy={10} />
+                          <YAxis domain={[0, 10]} axisLine={false} tickLine={false} tick={{fill: '#5C6B50', fontSize: 12}} />
                           <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
-                          <Line type="monotone" dataKey="hydrationScore" name="Hydration" stroke="#3B82F6" strokeWidth={3} dot={{r: 4, fill: '#3B82F6'}} activeDot={{r: 6}} />
-                          <Line type="monotone" dataKey="carbsScore" name="Carbs/Portion" stroke="#F59E0B" strokeWidth={3} dot={{r: 4, fill: '#F59E0B'}} />
+                          <Line type="monotone" dataKey="hydrationScore" name="Hydration" stroke="#395422" strokeWidth={3} dot={{r: 4, fill: '#395422'}} activeDot={{r: 6}} />
+                          <Line type="monotone" dataKey="carbsScore" name="Carbs/Portion" stroke="#5C6B50" strokeWidth={3} dot={{r: 4, fill: '#5C6B50'}} />
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
@@ -720,12 +719,12 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
                     <div className="h-64">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={trendsData.chartData}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                          <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#6B7280', fontSize: 12}} dy={10} />
-                          <YAxis domain={[0, 10]} axisLine={false} tickLine={false} tick={{fill: '#6B7280', fontSize: 12}} />
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E0E5DA" />
+                          <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#5C6B50', fontSize: 12}} dy={10} />
+                          <YAxis domain={[0, 10]} axisLine={false} tickLine={false} tick={{fill: '#5C6B50', fontSize: 12}} />
                           <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
-                          <Line type="monotone" dataKey="sleepScore" name="Sleep Quality" stroke="#8B5CF6" strokeWidth={3} dot={{r: 4, fill: '#8B5CF6'}} activeDot={{r: 6}} />
-                          <Line type="monotone" dataKey="energyScore" name="Energy Level" stroke="#10B981" strokeWidth={3} dot={{r: 4, fill: '#10B981'}} />
+                          <Line type="monotone" dataKey="sleepScore" name="Sleep Quality" stroke="#1F2917" strokeWidth={3} dot={{r: 4, fill: '#1F2917'}} activeDot={{r: 6}} />
+                          <Line type="monotone" dataKey="energyScore" name="Energy Level" stroke="#395422" strokeWidth={3} dot={{r: 4, fill: '#395422'}} />
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
@@ -739,10 +738,10 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
 
         {activeMenu === 'Analytics' && (
           <div className="space-y-10 animate-in fade-in duration-500">
-            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-[#F2F4EF]">
               <div className="flex justify-between items-center mb-8">
-                <h3 className="font-bold text-gray-800 text-2xl">Session AI Insights</h3>
-                <span className="bg-purple-100 text-purple-700 px-4 py-1.5 rounded-full text-sm font-medium">
+                <h3 className="font-bold text-[#1F2917] text-2xl">Session AI Insights</h3>
+                <span className="bg-[#395422] text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest">
                   Latest Data Interpretation
                 </span>
               </div>
@@ -750,42 +749,42 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
               {analyticsData ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8 mb-12">
                 {[
-                  { label: 'Meal Composition', value: analyticsData.meal_composition, icon: Utensils, color: 'bg-blue-50 text-blue-600', iconColor: 'text-blue-500' },
-                  { label: 'Portion Size', value: analyticsData.portion_size, icon: Coffee, color: 'bg-orange-50 text-orange-600', iconColor: 'text-orange-500' },
-                  { label: 'Hydration', value: analyticsData.hydration, icon: Droplets, color: 'bg-teal-50 text-teal-600', iconColor: 'text-teal-500' },
-                  { label: 'Appetite Levels', value: analyticsData.appetite_levels, icon: Coffee, color: 'bg-purple-50 text-purple-600', iconColor: 'text-purple-500' },
-                  { label: 'Medication', value: analyticsData.medication ? 'Taken' : 'Not Taken', icon: Pill, color: 'bg-pink-50 text-pink-600', iconColor: 'text-pink-500' },
-                  { label: 'Symptom Check', value: analyticsData.symptoms, icon: Stethoscope, color: 'bg-red-50 text-red-600', iconColor: 'text-red-500' },
-                  { label: 'Sleep Quality', value: analyticsData.sleep_quality, icon: Moon, color: 'bg-indigo-50 text-indigo-600', iconColor: 'text-indigo-500' },
-                  { label: 'Energy Levels', value: analyticsData.energy_levels, icon: Battery, color: 'bg-yellow-50 text-yellow-600', iconColor: 'text-yellow-500' },
-                  { label: 'Social Interaction', value: analyticsData.social_interaction, icon: Users, color: 'bg-green-50 text-green-600', iconColor: 'text-green-500' },
+                  { label: 'Meal Composition', value: analyticsData.meal_composition, icon: Utensils },
+                  { label: 'Portion Size', value: analyticsData.portion_size, icon: Coffee },
+                  { label: 'Hydration', value: analyticsData.hydration, icon: Droplets },
+                  { label: 'Appetite Levels', value: analyticsData.appetite_levels, icon: Coffee },
+                  { label: 'Medication', value: analyticsData.medication ? 'Taken' : 'Not Taken', icon: Pill },
+                  { label: 'Symptom Check', value: analyticsData.symptoms, icon: Stethoscope },
+                  { label: 'Sleep Quality', value: analyticsData.sleep_quality, icon: Moon },
+                  { label: 'Energy Levels', value: analyticsData.energy_levels, icon: Battery },
+                  { label: 'Social Interaction', value: analyticsData.social_interaction, icon: Users },
                 ].map((item, idx) => (
-                  <div key={idx} className={`${item.color} p-6 rounded-2xl border border-current/10 flex flex-col hover:shadow-md transition-shadow`}>
+                  <div key={idx} className="bg-[#F2F4EF] p-6 rounded-2xl border border-[#395422]/5 flex flex-col hover:shadow-md transition-shadow">
                     <div className="flex items-center space-x-3 mb-4">
-                      <div className={`p-2 ${item.iconColor} bg-white rounded-lg`}>
+                      <div className="p-2 text-[#395422] bg-white rounded-lg">
                         <item.icon className="w-5 h-5" />
                       </div>
-                      <h4 className="font-semibold text-gray-900">{item.label}</h4>
+                      <h4 className="font-semibold text-[#1F2917]">{item.label}</h4>
                     </div>
-                    <p className="text-gray-700 font-medium">{item.value || 'N/A'}</p>
+                    <p className="text-[#5C6B50] font-medium">{item.value || 'N/A'}</p>
                   </div>
                 ))}
-              </div>
+                </div>
               ) : (
                 <div className="text-center py-16">
-                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Bot className="w-10 h-10 text-gray-400" />
+                  <div className="w-20 h-20 bg-[#F2F4EF] rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Bot className="w-10 h-10 text-[#395422]/30" />
                   </div>
-                  <h4 className="text-xl font-bold text-gray-700 mb-2">No Insights Yet</h4>
-                  <p className="text-gray-500">Have a session with Aayu first. After the session, Gemini will automatically interpret the health data here.</p>
+                  <h4 className="text-xl font-bold text-[#1F2917] mb-2">No Insights Yet</h4>
+                  <p className="text-[#5C6B50]">Have a session with Aayu first. After the session, Gemini will automatically interpret the health data here.</p>
                 </div>
               )}
             </div>
 
-            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-3xl shadow-sm p-8 relative overflow-hidden border border-blue-100 flex flex-col items-center justify-center text-center">
-              <h4 className="font-bold text-gray-800 text-xl mb-3">Knowledge Base</h4>
-              <p className="text-gray-600 mb-6">Upload hospital reports and medical history to train Aayu for personalized care.</p>
-              <label className={`cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl flex items-center space-x-3 transition-colors z-10 ${isUploading ? 'opacity-50 cursor-wait' : ''}`}>
+            <div className="bg-[#F2F4EF] rounded-3xl shadow-sm p-8 relative overflow-hidden border border-[#395422]/5 flex flex-col items-center justify-center text-center">
+              <h4 className="font-bold text-[#1F2917] text-xl mb-3">Knowledge Base</h4>
+              <p className="text-[#5C6B50] mb-6">Upload hospital reports and medical history to train Aayu for personalized care.</p>
+              <label className={`cursor-pointer bg-[#395422] hover:bg-[#2D421B] text-white px-6 py-3 rounded-xl flex items-center space-x-3 transition-colors z-10 ${isUploading ? 'opacity-50 cursor-wait' : ''}`}>
                 <Upload className="w-5 h-5" />
                 <span className="font-medium">{isUploading ? 'Uploading & Processing...' : 'Upload Medical PDF'}</span>
                 <input
@@ -796,8 +795,9 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
                   disabled={isUploading}
                 />
               </label>
-              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-blue-200/50 rounded-full blur-2xl"></div>
-              <div className="absolute top-10 left-10 w-20 h-20 bg-indigo-200/30 rounded-full blur-xl"></div>
+              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-[#395422]/10 rounded-full blur-2xl"></div>
+              <div className="absolute top-10 left-10 w-20 h-20 bg-[#5C6B50]/10 rounded-full blur-xl"></div>
+
             </div>
           </div>
         )}
@@ -811,29 +811,29 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
             className="fixed inset-0 bg-black/10 backdrop-blur-sm z-40 md:hidden"
             onClick={() => setIsAgentFeedOpen(false)}
           />
-          <aside className="fixed inset-y-0 right-0 w-80 bg-[#FAEEE4] shadow-2xl p-6 z-50 flex flex-col h-full overflow-hidden transition-all animate-in slide-in-from-right duration-300">
+          <aside className="fixed inset-y-0 right-0 w-80 bg-[#F2F4EF] shadow-2xl p-6 z-50 flex flex-col h-full overflow-hidden transition-all animate-in slide-in-from-right duration-300">
             <div className="flex justify-between items-center mb-8 shrink-0">
-              <h3 className="text-xl font-bold text-gray-800">Agent Logic Feed</h3>
+              <h3 className="text-xl font-bold text-[#1F2917]">Agent Logic Feed</h3>
               <button onClick={() => setIsAgentFeedOpen(false)} className="p-1 hover:bg-white/50 rounded-full transition-colors">
-                <X className="w-6 h-6 text-gray-500" />
+                <X className="w-6 h-6 text-[#5C6B50]" />
               </button>
             </div>
 
           <div className="space-y-6 flex-1 overflow-y-auto pr-2 custom-scrollbar">
             {/* Active Listening State for Dashboard Mode */}
             {activeMenu === 'Dashboard' && isRecording && (
-              <div className="relative pl-6 before:content-[''] before:absolute before:left-2 before:top-2 before:w-[2px] before:h-full before:bg-purple-200 last:before:h-0 animate-in fade-in slide-in-from-top-4">
-                <div className="absolute left-1 top-1.5 w-2.5 h-2.5 bg-purple-500 rounded-full ring-4 ring-[#FAEEE4] animate-pulse"></div>
-                <div className="flex justify-between items-center mb-1 text-xs text-gray-500 font-medium">
+              <div className="relative pl-6 before:content-[''] before:absolute before:left-2 before:top-2 before:w-[2px] before:h-full before:bg-[#395422]/20 last:before:h-0 animate-in fade-in slide-in-from-top-4">
+                <div className="absolute left-1 top-1.5 w-2.5 h-2.5 bg-[#395422] rounded-full ring-4 ring-[#F2F4EF] animate-pulse"></div>
+                <div className="flex justify-between items-center mb-1 text-xs text-[#5C6B50] font-bold uppercase tracking-wider">
                   <span>Now</span>
-                  <span className="text-purple-600 bg-purple-100 px-2 rounded animate-pulse">Interviewer</span>
+                  <span className="text-[#395422] bg-[#395422]/10 px-2 rounded animate-pulse">Interviewer</span>
                 </div>
-                <div className="bg-white p-3 rounded-xl shadow-sm border border-purple-200 mt-2">
-                  <p className="text-sm text-gray-700 font-medium">Listening to audio stream...</p>
-                  <p className="text-xs text-purple-500 mt-1 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce"></span>
-                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                <div className="bg-white p-3 rounded-xl shadow-sm border border-[#395422]/10 mt-2">
+                  <p className="text-sm text-[#1F2917] font-bold">Listening to audio stream...</p>
+                  <p className="text-xs text-[#395422] mt-1 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-[#395422] rounded-full animate-bounce"></span>
+                    <span className="w-1.5 h-1.5 bg-[#395422] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                    <span className="w-1.5 h-1.5 bg-[#395422] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
                   </p>
                 </div>
               </div>
@@ -850,60 +850,51 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
                const title = formatToolName(log.data?.action || '');
                const desc = formatToolArgs(log.data?.args);
                
-               // Generate a simple deterministic color based on the action name
-               const colors = ['orange', 'teal', 'blue', 'purple', 'pink'];
-               const colorIndex = log.data?.action ? log.data.action.length % colors.length : 0;
-               const color = colors[colorIndex];
-               // Map colors statically for Tailwind to detect
                const colorStyles: Record<string, any> = {
-                 orange: {
-                   line: 'before:bg-orange-200',
-                   dot: 'bg-orange-500',
-                   badgeText: 'text-orange-600',
-                   badgeBg: 'bg-orange-100',
-                   border: 'border-orange-100/50'
+                 green1: {
+                   line: 'before:bg-[#395422]/20',
+                   dot: 'bg-[#395422]',
+                   badgeText: 'text-[#395422]',
+                   badgeBg: 'bg-[#395422]/10',
+                   border: 'border-[#395422]/10'
                  },
-                 teal: {
-                   line: 'before:bg-teal-200',
-                   dot: 'bg-teal-500',
-                   badgeText: 'text-teal-600',
-                   badgeBg: 'bg-teal-100',
-                   border: 'border-teal-100/50'
+                 green2: {
+                   line: 'before:bg-[#5C6B50]/20',
+                   dot: 'bg-[#5C6B50]',
+                   badgeText: 'text-[#5C6B50]',
+                   badgeBg: 'bg-[#5C6B50]/10',
+                   border: 'border-[#5C6B50]/10'
                  },
-                 blue: {
-                   line: 'before:bg-blue-200',
-                   dot: 'bg-blue-500',
-                   badgeText: 'text-blue-600',
-                   badgeBg: 'bg-blue-100',
-                   border: 'border-blue-100/50'
+                 green3: {
+                   line: 'before:bg-[#1F2917]/20',
+                   dot: 'bg-[#1F2917]',
+                   badgeText: 'text-[#1F2917]',
+                   badgeBg: 'bg-[#1F2917]/10',
+                   border: 'border-[#1F2917]/10'
                  },
-                 purple: {
-                   line: 'before:bg-purple-200',
-                   dot: 'bg-purple-500',
-                   badgeText: 'text-purple-600',
-                   badgeBg: 'bg-purple-100',
-                   border: 'border-purple-100/50'
-                 },
-                 pink: {
-                   line: 'before:bg-pink-200',
-                   dot: 'bg-pink-500',
-                   badgeText: 'text-pink-600',
-                   badgeBg: 'bg-pink-100',
-                   border: 'border-pink-100/50'
+                 brand: {
+                   line: 'before:bg-[#395422]/20',
+                   dot: 'bg-[#395422]',
+                   badgeText: 'text-[#395422]',
+                   badgeBg: 'bg-[#395422]/10',
+                   border: 'border-[#395422]/20'
                  }
                };
+               const colors = ['green1', 'green2', 'green3', 'brand'];
+               const colorIndex = log.data?.action ? log.data.action.length % colors.length : 0;
+               const color = colors[colorIndex];
                const style = colorStyles[color];
 
                return (
                 <div key={log.id} className={`relative pl-6 before:content-[''] before:absolute before:left-2 before:top-2 before:w-[2px] before:h-full ${style.line} last:before:h-0`}>
-                  <div className={`absolute left-1 top-1.5 w-2.5 h-2.5 ${style.dot} rounded-full ring-4 ring-[#FAEEE4]`}></div>
-                  <div className="flex justify-between items-center mb-1 text-xs text-gray-500 font-medium">
+                  <div className={`absolute left-1 top-1.5 w-2.5 h-2.5 ${style.dot} rounded-full ring-4 ring-[#F2F4EF]`}></div>
+                  <div className="flex justify-between items-center mb-1 text-xs text-[#5C6B50] font-bold uppercase tracking-wider">
                     <span>{timeStr}</span>
                     <span className={`${style.badgeText} ${style.badgeBg} px-2 rounded`}>Aayu AI</span>
                   </div>
                   <div className={`bg-white p-3 rounded-xl shadow-sm border ${style.border} mt-2`}>
-                    <p className="text-sm text-gray-700 font-medium">{title}</p>
-                    <p className="text-xs text-gray-500 mt-1">{desc}</p>
+                    <p className="text-sm text-[#1F2917] font-bold">{title}</p>
+                    <p className="text-xs text-[#5C6B50] mt-1">{desc}</p>
                   </div>
                 </div>
                );
@@ -921,7 +912,7 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
           background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: #fbdcae;
+          background-color: #395422;
           border-radius: 20px;
         }
       `}</style>

@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-purple: #6c2bd9;
+  --color-brand-teal: #63c5ce;
+  --color-brand-orange: #fe7c55;
+  --color-bg-base: #fef7f2;
+  --color-text-primary: #2d264b;
+  --color-text-secondary: #a3a1ad;
+  --color-sidebar: #ffffff;
+  --color-sidebar-active: #f1f5f9;
+}
+
+@layer base {
+  body {
+    @apply bg-[var(--color-bg-base)] text-[var(--color-text-primary)] antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}

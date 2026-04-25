@@ -511,7 +511,6 @@ Output STRICTLY JSON. Do NOT include markdown formatting like \`\`\`json.`;
             { name: 'Dashboard', icon: Home },
             { name: 'Analytics', icon: Activity },
             { name: 'Trends', icon: TrendingUp },
-            { name: 'Settings', icon: Settings },
           ].map((item) => (
             <button
               key={item.name}

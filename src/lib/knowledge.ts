@@ -7,6 +7,14 @@ const ai = new GoogleGenAI({
 
 export async function processAndUploadPDF(file: File, userId: string): Promise<void> {
   try {
+    // 0. Ensure session is fresh before starting heavy upload/embedding process
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session) {
+      console.warn('Session potentially stale, attempting refresh...');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Authentication session expired. Please log in again.");
+    }
+
     // 1. Convert File to Base64 (using robust FileReader to avoid memory leaks)
     const base64Data = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();

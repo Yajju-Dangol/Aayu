@@ -8,7 +8,7 @@ Keep your responses short, natural, conversational, and caring.
 `;
 
 import { supabase } from './supabase';
-import { searchKnowledge } from './knowledge';
+import { FUNCTION_DECLARATIONS, executeTool, type ToolCall } from './tools';
 
 export class InterviewerAgent {
   private ws: WebSocket | null = null;
@@ -19,6 +19,7 @@ export class InterviewerAgent {
   private nextPlayTime = 0;
   private transcriptAccumulator = '';
   private userId: string;
+  private accessToken = '';
 
   constructor(userId: string) {
     this.userId = userId;
@@ -58,20 +59,54 @@ export class InterviewerAgent {
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
         if (!apiKey) throw new Error("API Key is missing.");
 
-        // Fetch user health knowledge
+        // Fetch and refresh user session explicitly for tool calls
+        try {
+          // getSession() will automatically refresh if the token is expired
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+          
+          if (sessionError) throw sessionError;
+
+          if (session?.access_token) {
+            this.accessToken = session.access_token;
+            console.log('[Agent] Session refreshed and token obtained.');
+          } else {
+            // If no session, try to get user which is more authoritative
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("No authenticated user found.");
+            
+            // Re-fetch session after getUser in case it refreshed
+            const { data: { session: newSession } } = await supabase.auth.getSession();
+            this.accessToken = newSession?.access_token || '';
+          }
+        } catch (e) {
+          console.warn('[Agent] Session check failed:', e);
+          if (this.onMessageCallback) {
+            this.onMessageCallback("Session expired. Please log out and back in.", true);
+          }
+          return reject(e);
+        }
+
+        // Fetch user health knowledge — with a 3s timeout so it never blocks the connection
         let additionalContext = "";
         try {
-          const { data: knowledgeData, error } = await supabase
+          const fetchPromise = supabase
             .from('health_knowledge')
-            .select('content, metadata')
+            .select('content')
             .eq('user_id', this.userId);
+          
+          const timeoutPromise = new Promise<never>((_, r) =>
+            setTimeout(() => r(new Error('Knowledge fetch timeout')), 10000)
+          );
+
+          const { data: knowledgeData, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
 
           if (!error && knowledgeData && knowledgeData.length > 0) {
-            additionalContext = "\n\nHere is the patient's health knowledge context:\n" +
-              knowledgeData.map(k => k.content).join("\n");
+            additionalContext = "\n\nPatient's uploaded health records:\n" +
+              knowledgeData.map((k: any) => k.content).join("\n");
+            console.log(`[Agent] Loaded ${knowledgeData.length} knowledge entries.`);
           }
         } catch (err) {
-          console.error("Failed to fetch knowledge context", err);
+          console.warn("[Agent] Knowledge fetch skipped:", (err as Error).message);
         }
 
         const dynamicSystemInstruction = SYSTEM_INSTRUCTION + additionalContext;
@@ -101,21 +136,12 @@ export class InterviewerAgent {
               systemInstruction: {
                 parts: [{ text: dynamicSystemInstruction }]
               },
+              // ── Tool Declarations ────────────────────────────────────
+              // Per Live API docs: toolCall arrives as a TOP-LEVEL message,
+              // NOT inside serverContent.modelTurn.parts.
+              // Response must be sent as { toolResponse: { functionResponses: [{id, name, response}] } }
               tools: [{
-                functionDeclarations: [{
-                  name: "searchHealthKnowledge",
-                  description: "Search the patient's uploaded medical records and health knowledge (e.g., PDF reports) for specific answers.",
-                  parameters: {
-                    type: "OBJECT",
-                    properties: {
-                      query: {
-                        type: "STRING",
-                        description: "The medical question or search query."
-                      }
-                    },
-                    required: ["query"]
-                  }
-                }]
+                functionDeclarations: FUNCTION_DECLARATIONS
               }]
             }
           };
@@ -138,6 +164,29 @@ export class InterviewerAgent {
               setTimeout(() => {
                 this.sendText("Please greet the patient warmly in Nepali to start the conversation.");
               }, 300);
+            }
+
+            // ── Tool Call Handler (TOP-LEVEL message, per Live API spec) ──────
+            // msg.toolCall arrives separately from serverContent.
+            // Must respond with toolResponse including the id from each call.
+            if (msg.toolCall?.functionCalls?.length > 0) {
+              const functionResponses: Array<{ id: string; name: string; response: Record<string, any> }> = [];
+
+              for (const fc of msg.toolCall.functionCalls) {
+                console.log(`[Tool] Called: ${fc.name}`, fc.args);
+                const toolCall: ToolCall = { id: fc.id, name: fc.name, args: fc.args ?? {} };
+                // Pass access token so tools can make authenticated Supabase calls
+                const result = await executeTool(toolCall, this.userId, this.accessToken);
+                console.log(`[Tool] Result for ${fc.name}:`, result);
+                functionResponses.push({ id: fc.id, name: fc.name, response: result });
+              }
+
+              // Send all responses back in one message
+              if (this.ws?.readyState === WebSocket.OPEN) {
+                this.ws.send(JSON.stringify({
+                  toolResponse: { functionResponses }
+                }));
+              }
             }
 
             if (msg.serverContent) {
@@ -172,9 +221,6 @@ export class InterviewerAgent {
                   }
                   // Inline Audio Parts
                   if (part.inlineData && part.inlineData.mimeType.startsWith('audio/pcm')) {
-                    if (this.onMessageCallback) {
-                      this.onMessageCallback("Aayu is speaking...", true);
-                    }
                     const audioBytes = part.inlineData.data;
                     const binaryStr = atob(audioBytes);
                     const uint8 = new Uint8Array(binaryStr.length);
@@ -182,33 +228,6 @@ export class InterviewerAgent {
                       uint8[i] = binaryStr.charCodeAt(i);
                     }
                     await this.playAudioChunk(uint8);
-                  }
-                  // Function Calls
-                  if (part.functionCall) {
-                    const functionCall = part.functionCall;
-                    if (functionCall.name === "searchHealthKnowledge") {
-                      const args = functionCall.args as any;
-                      const query = args.query;
-                      console.log("Model requested searchHealthKnowledge:", query);
-                      
-                      const searchResult = await searchKnowledge(query, this.userId);
-                      
-                      // Send the result back to the model
-                      this.ws?.send(JSON.stringify({
-                        clientContent: {
-                          turns: [{
-                            role: "user",
-                            parts: [{
-                              functionResponse: {
-                                name: "searchHealthKnowledge",
-                                response: { result: searchResult }
-                              }
-                            }]
-                          }],
-                          turnComplete: true
-                        }
-                      }));
-                    }
                   }
                 }
               }

@@ -47,22 +47,35 @@ export default function App() {
       setUser(currentUser);
       setLoadingAuth(false);
       if (currentUser) {
-        await supabase.from('profiles').upsert({
-          id: currentUser.id,
-          full_name: currentUser.user_metadata?.full_name || currentUser.email || 'Unknown User',
-        }, { onConflict: 'id' });
+        try {
+          const { error } = await supabase.from('profiles').upsert({
+            id: currentUser.id,
+            full_name: currentUser.user_metadata?.full_name || currentUser.email || 'Unknown User',
+          }, { onConflict: 'id' });
+          if (error) console.error('[Auth] profiles upsert error:', error.message, error.details);
+          else console.log('[Auth] Profile synced for user:', currentUser.id);
+        } catch (e) {
+          console.error('[Auth] profiles upsert threw:', e);
+        }
       }
-    });
+    }).catch(e => console.error('[Auth] getSession error:', e));
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log(`[Auth] Event: ${event}`);
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       setLoadingAuth(false);
-      if (currentUser) {
-        await supabase.from('profiles').upsert({
-          id: currentUser.id,
-          full_name: currentUser.user_metadata?.full_name || currentUser.email || 'Unknown User',
-        }, { onConflict: 'id' });
+      
+      if (currentUser && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+        try {
+          const { error } = await supabase.from('profiles').upsert({
+            id: currentUser.id,
+            full_name: currentUser.user_metadata?.full_name || currentUser.email || 'Unknown User',
+          }, { onConflict: 'id' });
+          if (error) console.error('[Auth] profiles sync error:', error.message);
+        } catch (e) {
+          console.error('[Auth] profiles sync failed:', e);
+        }
       }
     });
 
@@ -102,6 +115,7 @@ export default function App() {
           setUserTranscript(text);
         });
         await agent.connect();
+        setTranscript('नमस्ते! Aayu is listening...'); // guaranteed status clear
         await agent.startMicrophone();
       }
     } catch (err) {

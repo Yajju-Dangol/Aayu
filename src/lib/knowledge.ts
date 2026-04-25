@@ -34,10 +34,10 @@ export async function processAndUploadPDF(file: File, userId: string): Promise<v
     const embedding = response.embeddings[0].values;
 
     // 3. Store into Supabase Vector Store
-    // Omitting user_id for now to avoid Foreign Key constraint error since we don't have a real logged-in user profile.
     const { error } = await supabase
       .from('health_knowledge')
       .insert({
+        user_id: userId,
         content: `PDF Document: ${file.name}`, 
         embedding: embedding,
         metadata: { source: file.name, type: 'pdf', uploadedAt: new Date().toISOString() }

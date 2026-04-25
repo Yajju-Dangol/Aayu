@@ -7,6 +7,8 @@ including whether she has taken her medicine and how she is feeling.
 Keep your responses short, natural, conversational, and caring.
 `;
 
+import { supabase } from './supabase';
+
 export class InterviewerAgent {
   private ws: WebSocket | null = null;
   private onMessageCallback: ((text: string, isFinal: boolean) => void) | null = null;
@@ -14,7 +16,7 @@ export class InterviewerAgent {
   private audioContext: AudioContext | null = null;
   private nextPlayTime = 0;
   
-  constructor() {}
+  constructor(private userId: string) {}
 
   public onMessage(callback: (text: string, isFinal: boolean) => void) {
     this.onMessageCallback = callback;
@@ -35,13 +37,31 @@ export class InterviewerAgent {
    * Connects to the Live API WebSocket natively and starts listening for real-time audio.
    */
   public async connect(): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       try {
         console.log('Connecting to Gemini Live API via WebSockets...');
         this.initAudio();
         
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
         if (!apiKey) throw new Error("API Key is missing.");
+
+        // Fetch user health knowledge
+        let additionalContext = "";
+        try {
+           const { data: knowledgeData, error } = await supabase
+             .from('health_knowledge')
+             .select('content, metadata')
+             .eq('user_id', this.userId);
+           
+           if (!error && knowledgeData && knowledgeData.length > 0) {
+             additionalContext = "\n\nHere is the patient's health knowledge context:\n" + 
+               knowledgeData.map(k => k.content).join("\n");
+           }
+        } catch (err) {
+           console.error("Failed to fetch knowledge context", err);
+        }
+
+        const dynamicSystemInstruction = SYSTEM_INSTRUCTION + additionalContext;
 
         const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${apiKey}`;
         this.ws = new WebSocket(wsUrl);
@@ -66,7 +86,7 @@ export class InterviewerAgent {
               inputAudioTranscription: {},
               outputAudioTranscription: {},
               systemInstruction: {
-                parts: [{ text: SYSTEM_INSTRUCTION }]
+                parts: [{ text: dynamicSystemInstruction }]
               }
             }
           };

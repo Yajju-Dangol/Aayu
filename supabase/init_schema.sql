@@ -62,6 +62,7 @@ ALTER TABLE public.medications ENABLE ROW LEVEL SECURITY;
 -- Create RLS Policies
 -- Patient Policies: Patients can only SELECT and INSERT their own data
 CREATE POLICY "Patients can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Patients can insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Patients can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 
 CREATE POLICY "Patients can view own metrics" ON public.health_metrics FOR SELECT USING (auth.uid() = user_id);

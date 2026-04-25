@@ -42,14 +42,28 @@ export default function App() {
   // Fetch initial auth state
   
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
       setLoadingAuth(false);
+      if (currentUser) {
+        await supabase.from('profiles').upsert({
+          id: currentUser.id,
+          full_name: currentUser.user_metadata?.full_name || currentUser.email || 'Unknown User',
+        }, { onConflict: 'id' });
+      }
     });
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
       setLoadingAuth(false);
+      if (currentUser) {
+        await supabase.from('profiles').upsert({
+          id: currentUser.id,
+          full_name: currentUser.user_metadata?.full_name || currentUser.email || 'Unknown User',
+        }, { onConflict: 'id' });
+      }
     });
 
     return () => {
@@ -70,7 +84,8 @@ export default function App() {
         setIsRecording(true);
         setTranscript("Connecting to Aayu...");
         setUserTranscript("");
-        const agent = new InterviewerAgent();
+        if (!user) throw new Error("User not logged in");
+        const agent = new InterviewerAgent(user.id);
         agentRef.current = agent;
         agent.onMessage((text, isFinal) => {
           setTranscript(text);
@@ -94,7 +109,7 @@ export default function App() {
 
     try {
       setIsUploading(true);
-      await processAndUploadPDF(file, user?.id || '00000000-0000-0000-0000-000000000000');
+      await processAndUploadPDF(file, user?.id || '');
       alert('PDF Hospital Report successfully embedded and stored in the database!');
     } catch (error) {
       console.error(error);
@@ -106,8 +121,15 @@ export default function App() {
     }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleLogout = () => {
+    // Fire and forget the server-side logout
+    supabase.auth.signOut().catch(console.error);
+    
+    // Aggressively clear local state immediately
+    localStorage.clear();
+    sessionStorage.clear();
+    setUser(null);
+    window.location.href = '/';
   };
 
   if (loadingAuth) {
@@ -141,7 +163,7 @@ export default function App() {
           <p className="text-sm text-gray-500">Connected via Google</p>
         </div>
 
-        <nav className="w-full space-y-2 flex-1">
+        <nav className="w-full flex flex-col space-y-2 flex-1">
           {[
             { name: 'Dashboard', icon: Home },
             { name: 'Analytics', icon: Activity },

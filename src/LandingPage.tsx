@@ -1,4 +1,4 @@
-import { ArrowRight, Heart, Activity, Brain, ShieldCheck, Mic, FileText, Smartphone, LayoutDashboard, Globe, Zap, Database, Pill, Coffee, Droplets, Thermometer, Smile, Users, Search, ClipboardCheck } from 'lucide-react';
+import { ArrowRight, Activity, ShieldCheck, Mic, FileText, Globe, Zap, Database, Pill, Coffee, Droplets, Thermometer, ClipboardCheck } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { motion } from 'framer-motion';
 

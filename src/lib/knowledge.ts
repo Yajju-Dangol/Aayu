@@ -7,11 +7,17 @@ const ai = new GoogleGenAI({
 
 export async function processAndUploadPDF(file: File, userId: string): Promise<void> {
   try {
-    // 1. Convert File to Base64
-    const arrayBuffer = await file.arrayBuffer();
-    const base64Data = btoa(
-      new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
-    );
+    // 1. Convert File to Base64 (using robust FileReader to avoid memory leaks)
+    const base64Data = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        const base64 = dataUrl.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
 
     // 2. Generate Embeddings using Gemini 2.0 Multimodal Embedding Model
     // (We prefix it with a task instruction as recommended by the docs)
@@ -31,14 +37,15 @@ export async function processAndUploadPDF(file: File, userId: string): Promise<v
       }
     });
 
-    const embedding = response.embeddings[0].values;
+    const embedding = response.embeddings?.[0]?.values;
+    if (!embedding) throw new Error("No embedding returned");
 
     // 3. Store into Supabase Vector Store
     const { error } = await supabase
       .from('health_knowledge')
       .insert({
         user_id: userId,
-        content: `PDF Document: ${file.name}`, 
+        content: `PDF Document: ${file.name}`,
         embedding: embedding,
         metadata: { source: file.name, type: 'pdf', uploadedAt: new Date().toISOString() }
       });
@@ -51,5 +58,43 @@ export async function processAndUploadPDF(file: File, userId: string): Promise<v
   } catch (error) {
     console.error('Error processing PDF:', error);
     throw error;
+  }
+}
+
+export async function searchKnowledge(query: string, userId: string): Promise<string> {
+  try {
+    const response = await ai.models.embedContent({
+      model: 'gemini-embedding-2',
+      contents: [
+        "task: retrieval_query | query: " + query
+      ],
+      config: {
+        outputDimensionality: 1536
+      }
+    });
+
+    const embedding = response.embeddings?.[0]?.values;
+    if (!embedding) return "No data found.";
+
+    const { data, error } = await supabase.rpc('match_health_knowledge', {
+      query_embedding: embedding,
+      match_threshold: 0.5,
+      match_count: 3,
+      p_user_id: userId
+    });
+
+    if (error) {
+      console.error("RPC Error:", error);
+      return "Database error during search.";
+    }
+
+    if (!data || data.length === 0) {
+      return "No matching medical records found.";
+    }
+
+    return data.map((d: any) => `Document Content:\n${d.content}`).join("\n\n---\n\n");
+  } catch (err) {
+    console.error("Search error:", err);
+    return "Failed to search knowledge base.";
   }
 }

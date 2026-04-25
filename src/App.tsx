@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import {
-  Home, Activity, ListTodo, Route, Settings,
-  Search, Plus, Bell, MoreHorizontal, User,
-  Heart, Thermometer, Mic, ShieldAlert, Bot, X, Upload
+  Home, Activity, Settings,
+  Search, Plus, User,
+  Heart, Thermometer, Mic, ShieldAlert, Bot, X, Upload, MoreHorizontal
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion } from 'framer-motion';
@@ -87,14 +87,22 @@ export default function App() {
         if (!user) throw new Error("User not logged in");
         const agent = new InterviewerAgent(user.id);
         agentRef.current = agent;
-        agent.onMessage((text, isFinal) => {
+
+        // CRITICAL: unlockAudio must be called synchronously inside the click handler
+        // to satisfy the browser's autoplay gesture requirement
+        agent.unlockAudio();
+
+        agent.onStatus((status) => {
+          setTranscript(status);
+        });
+        agent.onMessage((text) => {
           setTranscript(text);
         });
         agent.onInputMessage((text) => {
           setUserTranscript(text);
         });
         await agent.connect();
-        await agent.startMicrophone(); // START AUDIO RECORDING CAPTURE
+        await agent.startMicrophone();
       }
     } catch (err) {
       console.error(err);

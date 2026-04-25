@@ -1,4 +1,4 @@
-import { ArrowRight, ArrowUpRight, CheckCircle, Heart, Activity, Star, Users, Brain } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Heart, Activity, Star, Users, Brain } from 'lucide-react';
 import { supabase } from './lib/supabase';
 
 export default function LandingPage() {

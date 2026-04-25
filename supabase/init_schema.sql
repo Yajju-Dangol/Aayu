@@ -106,3 +106,33 @@ SELECT cron.schedule(
     );
     $$
 );
+
+-- Vector Search RPC
+CREATE OR REPLACE FUNCTION public.match_health_knowledge(
+  query_embedding vector(1536),
+  match_threshold float,
+  match_count int,
+  p_user_id uuid
+)
+RETURNS TABLE (
+  id uuid,
+  content text,
+  metadata jsonb,
+  similarity float
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    health_knowledge.id,
+    health_knowledge.content,
+    health_knowledge.metadata,
+    1 - (health_knowledge.embedding <=> query_embedding) AS similarity
+  FROM health_knowledge
+  WHERE health_knowledge.user_id = p_user_id
+    AND 1 - (health_knowledge.embedding <=> query_embedding) > match_threshold
+  ORDER BY health_knowledge.embedding <=> query_embedding
+  LIMIT match_count;
+END;
+$$;

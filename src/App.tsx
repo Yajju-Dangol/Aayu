@@ -28,6 +28,7 @@ export default function App() {
   const [isUploading, setIsUploading] = useState(false);
   const [transcript, setTranscript] = useState('How are you feeling today?');
   const [userTranscript, setUserTranscript] = useState('');
+  const [agentLogs, setAgentLogs] = useState<any[]>([]);
   
   // Auth state
   const [user, setUser] = useState<SupabaseUser | null>(null);
@@ -86,6 +87,55 @@ export default function App() {
       authListener.subscription.unsubscribe();
     };
   }, []);
+
+  // Fetch and subscribe to Agent Logs
+  useEffect(() => {
+    if (!user) return;
+    
+    // Fetch initial logs
+    supabase.from('health_logs')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('log_type', 'agent_action')
+      .order('logged_at', { ascending: false })
+      .limit(20)
+      .then(({ data, error }) => {
+        if (!error && data) setAgentLogs(data);
+      });
+
+    // Subscribe to new logs
+    const channel = supabase.channel('agent_logs_changes')
+      .on('postgres_changes', { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'health_logs', 
+          filter: `user_id=eq.${user.id}` 
+       }, (payload) => {
+          if (payload.new.log_type === 'agent_action') {
+             setAgentLogs(prev => [payload.new, ...prev]);
+          }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
+  const formatToolName = (name: string) => {
+    switch (name) {
+      case 'searchHealthKnowledge': return 'Knowledge Base Search';
+      case 'logBloodPressure': return 'Logged Blood Pressure';
+      case 'logMedicineTaken': return 'Logged Medicine Status';
+      case 'logMoodAndWellness': return 'Logged Mood';
+      case 'logSymptom': return 'Logged Symptom';
+      default: return name;
+    }
+  };
+
+  const formatToolArgs = (args: any) => {
+    if (!args) return 'Performed action.';
+    const entries = Object.entries(args).map(([k, v]) => `${k}: ${v}`);
+    return entries.length > 0 ? entries.join(', ') : 'No additional details.';
+  };
 
   const toggleRecording = async () => {
     try {
@@ -456,42 +506,75 @@ export default function App() {
               </div>
             )}
 
-            {/* Feed Item */}
-            <div className="relative pl-6 before:content-[''] before:absolute before:left-2 before:top-2 before:w-[2px] before:h-full before:bg-orange-200 last:before:h-0">
-              <div className="absolute left-1 top-1.5 w-2.5 h-2.5 bg-orange-500 rounded-full ring-4 ring-[#FAEEE4]"></div>
-              <div className="flex justify-between items-center mb-1 text-xs text-gray-500 font-medium">
-                <span>10:00 AM</span>
-                <span className="text-purple-600 bg-purple-100 px-2 rounded">Interviewer</span>
+            {agentLogs.length === 0 && (
+              <div className="text-center text-sm text-gray-400 italic mt-8 p-4 bg-white/50 rounded-xl border border-dashed border-gray-200">
+                Awaiting agent activity... <br/> Ask Aayu to check your vitals or search your records.
               </div>
-              <div className="bg-white p-3 rounded-xl shadow-sm border border-orange-100/50 mt-2">
-                <p className="text-sm text-gray-700 font-medium">Greeting & Vitals Check</p>
-                <p className="text-xs text-gray-500 mt-1">Asked about morning medicine and checked visual BP logging.</p>
-              </div>
-            </div>
+            )}
 
-            <div className="relative pl-6 before:content-[''] before:absolute before:left-2 before:top-2 before:w-[2px] before:h-full before:bg-orange-200 last:before:h-0">
-              <div className="absolute left-1 top-1.5 w-2.5 h-2.5 bg-teal-500 rounded-full ring-4 ring-[#FAEEE4]"></div>
-              <div className="flex justify-between items-center mb-1 text-xs text-gray-500 font-medium">
-                <span>10:02 AM</span>
-                <span className="text-teal-600 bg-teal-100 px-2 rounded">Clinical Analyst</span>
-              </div>
-              <div className="bg-white p-3 rounded-xl shadow-sm border border-teal-100/50 mt-2">
-                <p className="text-sm text-gray-700 font-medium">Cross-Reference Data</p>
-                <p className="text-xs text-gray-500 mt-1">Analyzed BP 120/80 against baseline (130/85). Confirmed normal.</p>
-              </div>
-            </div>
+            {agentLogs.map((log) => {
+               const timeStr = new Date(log.logged_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+               const title = formatToolName(log.data?.action || '');
+               const desc = formatToolArgs(log.data?.args);
+               
+               // Generate a simple deterministic color based on the action name
+               const colors = ['orange', 'teal', 'blue', 'purple', 'pink'];
+               const colorIndex = log.data?.action ? log.data.action.length % colors.length : 0;
+               const color = colors[colorIndex];
+               // Map colors statically for Tailwind to detect
+               const colorStyles: Record<string, any> = {
+                 orange: {
+                   line: 'before:bg-orange-200',
+                   dot: 'bg-orange-500',
+                   badgeText: 'text-orange-600',
+                   badgeBg: 'bg-orange-100',
+                   border: 'border-orange-100/50'
+                 },
+                 teal: {
+                   line: 'before:bg-teal-200',
+                   dot: 'bg-teal-500',
+                   badgeText: 'text-teal-600',
+                   badgeBg: 'bg-teal-100',
+                   border: 'border-teal-100/50'
+                 },
+                 blue: {
+                   line: 'before:bg-blue-200',
+                   dot: 'bg-blue-500',
+                   badgeText: 'text-blue-600',
+                   badgeBg: 'bg-blue-100',
+                   border: 'border-blue-100/50'
+                 },
+                 purple: {
+                   line: 'before:bg-purple-200',
+                   dot: 'bg-purple-500',
+                   badgeText: 'text-purple-600',
+                   badgeBg: 'bg-purple-100',
+                   border: 'border-purple-100/50'
+                 },
+                 pink: {
+                   line: 'before:bg-pink-200',
+                   dot: 'bg-pink-500',
+                   badgeText: 'text-pink-600',
+                   badgeBg: 'bg-pink-100',
+                   border: 'border-pink-100/50'
+                 }
+               };
+               const style = colorStyles[color];
 
-            <div className="relative pl-6 before:content-[''] before:absolute before:left-2 before:top-2 before:w-[2px] before:h-full before:bg-orange-200 last:before:h-0">
-              <div className="absolute left-1 top-1.5 w-2.5 h-2.5 bg-blue-500 rounded-full ring-4 ring-[#FAEEE4]"></div>
-              <div className="flex justify-between items-center mb-1 text-xs text-gray-500 font-medium">
-                <span>Yesterday, 8:00 PM</span>
-                <span className="text-blue-600 bg-blue-100 px-2 rounded">Guardian</span>
-              </div>
-              <div className="bg-white p-3 rounded-xl shadow-sm border border-blue-100/50 mt-2">
-                <p className="text-sm text-gray-700 font-medium">Evening Summary Sent</p>
-                <p className="text-xs text-gray-500 mt-1">Compiled daily interaction summary and logged to database.</p>
-              </div>
-            </div>
+               return (
+                <div key={log.id} className={`relative pl-6 before:content-[''] before:absolute before:left-2 before:top-2 before:w-[2px] before:h-full ${style.line} last:before:h-0`}>
+                  <div className={`absolute left-1 top-1.5 w-2.5 h-2.5 ${style.dot} rounded-full ring-4 ring-[#FAEEE4]`}></div>
+                  <div className="flex justify-between items-center mb-1 text-xs text-gray-500 font-medium">
+                    <span>{timeStr}</span>
+                    <span className={`${style.badgeText} ${style.badgeBg} px-2 rounded`}>Aayu AI</span>
+                  </div>
+                  <div className={`bg-white p-3 rounded-xl shadow-sm border ${style.border} mt-2`}>
+                    <p className="text-sm text-gray-700 font-medium">{title}</p>
+                    <p className="text-xs text-gray-500 mt-1">{desc}</p>
+                  </div>
+                </div>
+               );
+            })}
           </div>
         </aside>
       )}

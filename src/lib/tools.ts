@@ -114,6 +114,17 @@ export async function executeTool(
 ): Promise<Record<string, any>> {
   console.log(`[Tool] ▶ ${toolCall.name}`, toolCall.args);
 
+  const agentSupabase = createAgentSupabase(accessToken || '');
+  const { error: logError } = await agentSupabase.from('health_logs').insert({
+    user_id: userId,
+    log_type: 'agent_action',
+    data: { action: toolCall.name, args: toolCall.args },
+    logged_at: new Date().toISOString()
+  });
+  if (logError) {
+    console.error("Failed to log agent action", logError);
+  }
+
 
 
   try {

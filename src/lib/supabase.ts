@@ -9,12 +9,18 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+const agentClientCache: Record<string, any> = {};
+
 export const createAgentSupabase = (accessToken: string) => {
-  return createClient(supabaseUrl, supabaseAnonKey, {
+  const token = accessToken || 'empty';
+  if (agentClientCache[token]) return agentClientCache[token];
+
+  const client = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
       detectSessionInUrl: false,
+      storageKey: `agent-dummy-key-${Math.random()}`,
       storage: {
         getItem: () => null,
         setItem: () => {},
@@ -25,4 +31,7 @@ export const createAgentSupabase = (accessToken: string) => {
       headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
     }
   });
+
+  agentClientCache[token] = client;
+  return client;
 };

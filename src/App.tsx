@@ -97,16 +97,26 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
     
-    // Fetch initial logs
-    supabase.from('health_logs')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('log_type', 'agent_action')
-      .order('logged_at', { ascending: false })
-      .limit(20)
-      .then(({ data, error }) => {
-        if (!error && data) setAgentLogs(data);
-      });
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    const token = session?.access_token || supabaseAnonKey;
+
+    // Fetch initial logs using raw fetch to bypass supabase-js queueing issues
+    fetch(`${supabaseUrl}/rest/v1/health_logs?select=*&user_id=eq.${user.id}&order=logged_at.desc&limit=20`, {
+      headers: {
+        'apikey': supabaseAnonKey,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(async res => {
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    })
+    .then(data => {
+      if (Array.isArray(data)) setAgentLogs(data);
+    })
+    .catch(err => console.error('[Logs] Error fetching initial logs:', err));
 
     // Subscribe to new logs
     const channel = supabase.channel('agent_logs_changes')
@@ -116,23 +126,28 @@ export default function App() {
           table: 'health_logs', 
           filter: `user_id=eq.${user.id}` 
        }, (payload) => {
-          if (payload.new.log_type === 'agent_action') {
-             setAgentLogs(prev => [payload.new, ...prev]);
-          }
+          setAgentLogs(prev => [payload.new, ...prev]);
       })
       .subscribe();
 
-    // Fetch initial analytics
-    supabase.from('health_metrics')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('metric_type', 'session_analysis')
-      .order('recorded_at', { ascending: false })
-      .limit(1)
-      .single()
-      .then(({ data, error }) => {
-        if (!error && data && data.details) setAnalyticsData(data.details);
-      });
+    // Fetch initial analytics using raw fetch
+    fetch(`${supabaseUrl}/rest/v1/health_metrics?select=*&user_id=eq.${user.id}&metric_type=eq.session_analysis&order=recorded_at.desc&limit=1`, {
+      headers: {
+        'apikey': supabaseAnonKey,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(async res => {
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    })
+    .then(data => {
+      if (Array.isArray(data) && data.length > 0 && data[0].details) {
+        setAnalyticsData(data[0].details);
+      }
+    })
+    .catch(err => console.error('[Analytics] Error fetching initial analytics:', err));
 
     // Subscribe to new analytics
     const analyticsChannel = supabase.channel('analytics_changes')
@@ -152,19 +167,20 @@ export default function App() {
       supabase.removeChannel(channel); 
       supabase.removeChannel(analyticsChannel);
     };
-  }, [user]);
+  }, [user, session]);
 
   const formatToolName = (name: string) => {
     switch (name) {
       case 'searchHealthKnowledge': return 'Knowledge Base Search';
-      case 'logBloodPressure': return 'Logged Blood Pressure';
-      case 'logMedicineTaken': return 'Logged Medicine Status';
-      case 'logMoodAndWellness': return 'Logged Mood';
-      case 'logSymptom': return 'Logged Symptom';
-      case 'logDietaryInfo': return 'Logged Dietary Info';
-      case 'logHydrationStatus': return 'Logged Hydration';
-      case 'logSleepAndEnergy': return 'Logged Sleep & Energy';
-      case 'logSocialInteraction': return 'Logged Social Interaction';
+      case 'logBloodPressure': case 'blood_pressure': return 'Logged Blood Pressure';
+      case 'logMedicineTaken': case 'medicine_taken': return 'Logged Medicine Status';
+      case 'logMoodAndWellness': case 'mood_and_wellness': return 'Logged Mood';
+      case 'logSymptom': case 'symptom': return 'Logged Symptom';
+      case 'logDietaryInfo': case 'dietary_info': return 'Logged Dietary Info';
+      case 'logHydrationStatus': case 'hydration_status': return 'Logged Hydration';
+      case 'logSleepAndEnergy': case 'sleep_and_energy': return 'Logged Sleep & Energy';
+      case 'logSocialInteraction': case 'social_interaction': return 'Logged Social Interaction';
+      case 'agent_action': return 'Agent Action';
       default: return name;
     }
   };

@@ -244,7 +244,7 @@ async function handleLogBloodPressure(args: any, userId: string, accessToken: st
       logged_at: new Date().toISOString(),
     }),
     10000, 'logBloodPressure'
-  );
+  ) as any;
 
   if (error) {
     console.error('[Tool] logBloodPressure Supabase error:', error.message, error.details, error.hint);
@@ -263,7 +263,7 @@ async function handleLogMedicine(args: any, userId: string, accessToken: string)
       logged_at: new Date().toISOString(),
     }),
     10000, 'logMedicine'
-  );
+  ) as any;
 
   if (error) {
     console.error('[Tool] logMedicine Supabase error:', error.message, error.details, error.hint);
@@ -282,7 +282,7 @@ async function handleLogMood(args: any, userId: string, accessToken: string): Pr
       logged_at: new Date().toISOString(),
     }),
     10000, 'logMood'
-  );
+  ) as any;
 
   if (error) {
     console.error('[Tool] logMood Supabase error:', error.message, error.details, error.hint);
@@ -301,7 +301,7 @@ async function handleLogSymptom(args: any, userId: string, accessToken: string):
       logged_at: new Date().toISOString(),
     }),
     10000, 'logSymptom'
-  );
+  ) as any;
 
   if (error) {
     console.error('[Tool] logSymptom Supabase error:', error.message, error.details, error.hint);
@@ -320,7 +320,7 @@ async function handleLogDietaryInfo(args: any, userId: string, accessToken: stri
       logged_at: new Date().toISOString(),
     }),
     10000, 'logDietaryInfo'
-  );
+  ) as any;
   if (error) return { result: `Error: ${error.message}` };
   return { result: `Dietary info logged successfully.` };
 }
@@ -335,7 +335,7 @@ async function handleLogHydrationStatus(args: any, userId: string, accessToken: 
       logged_at: new Date().toISOString(),
     }),
     10000, 'logHydrationStatus'
-  );
+  ) as any;
   if (error) return { result: `Error: ${error.message}` };
   return { result: `Hydration status logged successfully.` };
 }
@@ -350,7 +350,7 @@ async function handleLogSleepAndEnergy(args: any, userId: string, accessToken: s
       logged_at: new Date().toISOString(),
     }),
     10000, 'logSleepAndEnergy'
-  );
+  ) as any;
   if (error) return { result: `Error: ${error.message}` };
   return { result: `Sleep and energy logged successfully.` };
 }
@@ -365,7 +365,7 @@ async function handleLogSocialInteraction(args: any, userId: string, accessToken
       logged_at: new Date().toISOString(),
     }),
     10000, 'logSocialInteraction'
-  );
+  ) as any;
   if (error) return { result: `Error: ${error.message}` };
   return { result: `Social interaction logged successfully.` };
 }

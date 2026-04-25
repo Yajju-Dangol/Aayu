@@ -25,7 +25,7 @@ Use the following tools to store these answers IMMEDIATELY as you get them:
 Keep your responses short, natural, conversational, and caring.
 `;
 
-import { supabase, createAgentSupabase } from './supabase';
+import { createAgentSupabase } from './supabase';
 import { FUNCTION_DECLARATIONS, executeTool, type ToolCall } from './tools';
 
 export class InterviewerAgent {
@@ -312,7 +312,7 @@ export class InterviewerAgent {
   public async startMicrophone() {
     try {
       this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      if (!this.audioContext) this.initAudio();
+      if (!this.audioContext) this.unlockAudio();
 
       this.audioSource = this.audioContext!.createMediaStreamSource(this.mediaStream);
       

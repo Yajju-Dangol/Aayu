@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import {
-  Home, Activity, Settings,
-  Search, Plus, User,
-  Heart, Thermometer, Mic, ShieldAlert, Bot, X, Upload, MoreHorizontal,
+  Home, Activity, User,
+  Mic, Bot, X, Upload,
   Coffee, Utensils, Droplets, Battery, Pill, Stethoscope, Moon, Users, TrendingUp, Menu
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -14,13 +13,6 @@ import type { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import LandingPage from './LandingPage';
 
 // --- DATA ---
-const bpData = [
-  { name: 'Mon', systolic: 120, diastolic: 80 },
-  { name: 'Tue', systolic: 122, diastolic: 81 },
-  { name: 'Wed', systolic: 118, diastolic: 79 },
-  { name: 'Thu', systolic: 125, diastolic: 85 },
-  { name: 'Fri', systolic: 121, diastolic: 82 },
-];
 
 export default function App() {
   const [activeMenu, setActiveMenu] = useState('Dashboard');
@@ -198,7 +190,6 @@ export default function App() {
         setIsRecording(false);
         setTranscript("Communication stopped.");
         if (agentRef.current) {
-          const finalTranscript = agentRef.current.fullTranscript;
           agentRef.current.disconnect();
           agentRef.current = null;
           

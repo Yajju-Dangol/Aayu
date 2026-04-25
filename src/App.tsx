@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Home, Activity, ListTodo, Route, Settings,
   Search, Plus, Bell, MoreHorizontal, User,
@@ -8,6 +8,9 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { motion } from 'framer-motion';
 import { processAndUploadPDF } from './lib/knowledge';
 import { InterviewerAgent } from './lib/InterviewerAgent';
+import { supabase } from './lib/supabase';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
+import LandingPage from './LandingPage';
 
 // --- DATA ---
 const bpData = [
@@ -25,9 +28,34 @@ export default function App() {
   const [isUploading, setIsUploading] = useState(false);
   const [transcript, setTranscript] = useState('How are you feeling today?');
   const [userTranscript, setUserTranscript] = useState('');
+  
+  // Auth state
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
 
   const agentRef = useRef<InterviewerAgent | null>(null);
-  const DUMMY_USER_ID = '00000000-0000-0000-0000-000000000000';
+
+  import.meta.hot?.on('vite:beforeUpdate', () => {
+    // optional logic
+  });
+
+  // Fetch initial auth state
+  
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoadingAuth(false);
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setLoadingAuth(false);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   const toggleRecording = async () => {
     try {
@@ -66,7 +94,7 @@ export default function App() {
 
     try {
       setIsUploading(true);
-      await processAndUploadPDF(file, DUMMY_USER_ID);
+      await processAndUploadPDF(file, user?.id || '00000000-0000-0000-0000-000000000000');
       alert('PDF Hospital Report successfully embedded and stored in the database!');
     } catch (error) {
       console.error(error);
@@ -77,6 +105,18 @@ export default function App() {
       e.target.value = '';
     }
   };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
+  if (loadingAuth) {
+    return <div className="h-screen bg-[#FDF8F3] flex items-center justify-center font-sans">Loading Aayu...</div>;
+  }
+
+  if (!user) {
+    return <LandingPage />;
+  }
 
   return (
     <div className="flex h-screen bg-[#FDF8F3] font-sans overflow-hidden">
@@ -90,11 +130,15 @@ export default function App() {
 
         <div className="flex flex-col items-center mb-10">
           <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4 overflow-hidden border-4 border-white shadow-md">
-            <User className="w-10 h-10 text-blue-500" />
+            {user?.user_metadata?.avatar_url ? (
+              <img src={user.user_metadata.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <User className="w-10 h-10 text-blue-500" />
+            )}
           </div>
           <span className="text-xs font-semibold text-orange-500 bg-orange-100 px-3 py-1 rounded-full mb-2">Patient</span>
-          <h2 className="font-bold text-gray-800">Aama Thapa</h2>
-          <p className="text-sm text-gray-500">Age: 72</p>
+          <h2 className="font-bold text-gray-800">{user?.user_metadata?.full_name || 'Aama Thapa'}</h2>
+          <p className="text-sm text-gray-500">Connected via Google</p>
         </div>
 
         <nav className="w-full space-y-2 flex-1">
@@ -116,6 +160,13 @@ export default function App() {
               <span>{item.name}</span>
             </button>
           ))}
+          <button
+              onClick={handleLogout}
+              className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all text-red-500 hover:bg-red-50 hover:text-red-700 mt-auto"
+            >
+              <User className="w-5 h-5" />
+              <span>Logout</span>
+          </button>
         </nav>
       </aside>
 

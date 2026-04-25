@@ -134,7 +134,7 @@ export default function App() {
 
     try {
       setIsUploading(true);
-      await processAndUploadPDF(file, user?.id || '');
+      await processAndUploadPDF(file, user?.id || '', session?.access_token || '');
       alert('PDF Hospital Report successfully embedded and stored in the database!');
     } catch (error) {
       console.error(error);

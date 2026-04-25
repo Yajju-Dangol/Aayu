@@ -5,14 +5,10 @@ const ai = new GoogleGenAI({
   apiKey: import.meta.env.VITE_GEMINI_API_KEY || '',
 });
 
-export async function processAndUploadPDF(file: File, userId: string): Promise<void> {
+export async function processAndUploadPDF(file: File, userId: string, accessToken: string): Promise<void> {
   try {
-    // 0. Ensure session is fresh before starting heavy upload/embedding process
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError || !session) {
-      console.warn('Session potentially stale, attempting refresh...');
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Authentication session expired. Please log in again.");
+    if (!accessToken) {
+       throw new Error("Authentication session expired. Please log in again.");
     }
 
     // 1. Convert File to Base64 (using robust FileReader to avoid memory leaks)
@@ -49,7 +45,8 @@ export async function processAndUploadPDF(file: File, userId: string): Promise<v
     if (!embedding) throw new Error("No embedding returned");
 
     // 3. Store into Supabase Vector Store
-    const { error } = await supabase
+    const agentSupabase = createAgentSupabase(accessToken);
+    const { error } = await agentSupabase
       .from('health_knowledge')
       .insert({
         user_id: userId,

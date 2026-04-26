@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://aaayu.netlify.app/aayu-logo.svg" alt="Aayu Logo" width="120" height="120" />
+</p>
+
 # Aayu - Simple AI Health Helper
 
 **Aayu** is a voice AI that helps elderly people in Nepal manage their health through simple conversations in Nepali. [1](#4-0) 

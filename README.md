@@ -1,6 +1,9 @@
 <p align="center">
   <img src="https://aaayu.netlify.app/aayu-logo.svg" alt="Aayu Logo" width="120" height="120" />
+  <br />
+  <a href="https://aaayu.netlify.app/"><b>Try the project here</b></a>
 </p>
+
 
 # Aayu - Simple AI Health Helper
 
